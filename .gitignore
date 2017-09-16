@@ -1,0 +1,6 @@
+__pycache__/
+docs-venv/
+venv/
+*.png
+*.pyc
+noisemaker.egg-info
