@@ -21,6 +21,9 @@ def main(config, track, callback, exclude_user=None):
             if data.get("rewtweeted_status"):
                 return
 
+            if data.get("in_reply_to_status_id"):
+                return
+
             user = data.get("user", {}).get("screen_name")
 
             if exclude_user and exclude_user == user:
