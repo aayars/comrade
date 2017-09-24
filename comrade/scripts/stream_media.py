@@ -19,7 +19,7 @@ def main(config, track, callback, exclude_user=None, testing=False):
             if data.get("possibly_sensitive"):
                 return
 
-            if data.get("rewtweeted_status"):
+            if data.get("retweeted_status"):
                 return
 
             if data.get("in_reply_to_status_id"):
