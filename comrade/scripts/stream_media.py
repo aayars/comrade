@@ -58,7 +58,7 @@ def main(config, track, callback, exclude_user=None, testing=False):
                 print(command)
 
             else:
-                subprocess.run(command, shell=True, check=True)
+                subprocess.call(command, shell=True)
 
             # print(json.dumps(data, indent=4))
 
