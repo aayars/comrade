@@ -26,7 +26,12 @@ def main(config, track, callback, exclude_user=None):
             if exclude_user and exclude_user == user:
                 return
 
-            media_url = data.get("entities", {}).get("media", {}).get("media_url_https")
+            media = data.get("entities", {}).get("media", [])
+
+            if not media:
+                return
+
+            media_url = media[0].get("media_url_https")
 
             if not media_url:
                 return
