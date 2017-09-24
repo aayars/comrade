@@ -12,7 +12,8 @@ import requests
 @click.option("--track", type=str, required=True)
 @click.option("--callback", type=str, required=True)
 @click.option("--exclude-user", type=str)
-def main(config, track, callback, exclude_user=None):
+@click.option("--testing", is_flag=True, default=False)
+def main(config, track, callback, exclude_user=None, testing=False):
     class Streamer(TwythonStreamer):
         def on_success(self, data):
             if data.get("possibly_sensitive"):
@@ -51,8 +52,14 @@ def main(config, track, callback, exclude_user=None):
             Process tweet
             effect_name=`artmangler random {filename}` && post-media --config {config} --image mangled.png --status "{user} vs. $effect_name" --in-reply-to {id}
             """
-            print(callback.format(filename="tweet.jpg", config=config, user=user, id=data["id"]))
-            # subprocess.run(callback.format(filename="tweet.jpg", config=config, user=user, id=data["id"]), shell=True, check=True)
+            command = callback.format(filename="tweet.jpg", config=config, user=user, id=data["id"])
+
+            if testing:
+                print(command)
+
+            else:
+                subprocess.run(command, shell=True, check=True)
+
             # print(json.dumps(data, indent=4))
 
         def on_error(self, status_code, data):
