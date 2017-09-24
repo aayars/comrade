@@ -14,6 +14,7 @@ setup(name='comrade',
       entry_points='''
         [console_scripts]
         post-media=comrade.scripts.post_media:main
+        stream-media=comrade.scripts.stream_media:main
         ''',
 
       install_requires=[

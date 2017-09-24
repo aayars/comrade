@@ -8,11 +8,12 @@ from twython import Twython
 @click.option("--config", type=click.Path(dir_okay=False), required=True)
 @click.option("--image", type=click.Path(dir_okay=False), required=True)
 @click.option("--status", type=str, required=True)
-def main(config, image, status):
+@click.option("--in-reply-to", type=str)
+def main(config, image, status, in_reply_to=None):
     config = json.load(open(config))
 
     client = Twython(config["api_key"], config["api_secret"], config["access_token"], config["access_secret"])
     client.verify_credentials()
 
     response = client.upload_media(media=open(image, 'rb'))
-    client.update_status(status=status, media_ids=[response['media_id']])
+    client.update_status(status=status, media_ids=[response['media_id']], in_reply_to_status_id=in_reply_to)
