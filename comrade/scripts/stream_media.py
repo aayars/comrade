@@ -21,7 +21,7 @@ def main(config, track, callback, exclude_user=None):
             if data.get("rewtweeted_status"):
                 return
 
-            user = data.get("user", {}).get("screen_name"):
+            user = data.get("user", {}).get("screen_name")
 
             if exclude_user and exclude_user == user:
                 return
@@ -31,7 +31,7 @@ def main(config, track, callback, exclude_user=None):
             if not media_url:
                 return
             
-	    r = requests.get(media_url, stream=True)
+            r = requests.get(media_url, stream=True)
 
             # https://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
             with open("tweet.jpg", 'wb') as fh:
@@ -40,9 +40,9 @@ def main(config, track, callback, exclude_user=None):
                         fh.write(chunk)
 
             """
-	    Process tweet
-	    effect_name=`artmangler random {filename}` && post-media --config {config} --image mangled.png --status "{user} vs. $effect_name" --in-reply-to {id}
-	    """
+            Process tweet
+            effect_name=`artmangler random {filename}` && post-media --config {config} --image mangled.png --status "{user} vs. $effect_name" --in-reply-to {id}
+            """
             print(callback.format(filename="tweet.jpg", config=config, user=user, id=data["id"]))
             # subprocess.run(callback.format(filename="tweet.jpg", config=config, user=user, id=data["id"]), shell=True, check=True)
             # print(json.dumps(data, indent=4))
