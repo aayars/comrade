@@ -1,6 +1,7 @@
 import click
 import json
 import subprocess
+import time
 
 from twython import TwythonStreamer
 
@@ -67,5 +68,10 @@ def main(config, track, callback, exclude_user=None, testing=False):
 
     cfg = json.load(open(config))
 
-    stream = Streamer(cfg["api_key"], cfg["api_secret"], cfg["access_token"], cfg["access_secret"])
-    stream.statuses.filter(track=track)
+    while(True):
+        try:
+            stream = Streamer(cfg["api_key"], cfg["api_secret"], cfg["access_token"], cfg["access_secret"])
+            stream.statuses.filter(track=track)
+
+        except Exception:
+            time.sleep(10)
