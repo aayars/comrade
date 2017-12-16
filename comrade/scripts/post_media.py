@@ -16,6 +16,7 @@ def main(config, image, status, in_reply_to=None, sensitive=False):
     client = Twython(config["api_key"], config["api_secret"], config["access_token"], config["access_secret"])
     client.verify_credentials()
 
-    response = client.upload_media(media=open(image, 'rb'))
-    client.update_status(status=status, media_ids=[response['media_id']], in_reply_to_status_id=in_reply_to,
+    responses = [client.upload_media(media=open(i, 'rb')) for i in image.split(',')]
+
+    client.update_status(status=status, media_ids=[r['media_id'] for r in responses], in_reply_to_status_id=in_reply_to,
                          possibly_sensitive=sensitive)
