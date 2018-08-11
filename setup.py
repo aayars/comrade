@@ -20,5 +20,6 @@ setup(name='comrade',
       install_requires=[
         "click==6.7",
         "twython==3.6.0",
+        "Mastodon.py==1.3.1",
         ]
       )
