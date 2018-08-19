@@ -21,39 +21,52 @@ import requests
 @click.option("--hashtag", type=str)
 def main(config, callback, exclude_user=None, testing=False, hashtag=None):
     class Streamer(StreamListener):
+        def on_update(self, status):
+            media_url = self._media_url_from_status(status)
+
+            user = status.get("account", {}).get("acct")
+
+            return self._handle_media(user, media_url, status_id, config, callback, testing, hashtag)
+
         def on_notification(self, notif):
             user = notif.get("account", {}).get("acct")
-
-            if exclude_user and exclude_user == user:
-                return
 
             if notif.get("type") == "follow":
                 media_url = notif.get("account", {}).get("avatar_static")
                 status_id = None
 
             else:
-                data = notif.get("status", {})
-
-                if data.get("sensitive"):
-                    return
-
-                if data.get("reblog"):
-                    return
-
-                if data.get("in_reply_to_id"):
-                    return
-
-                media = data.get("media_attachments", [])
-
-                if not media:
-                    return
-
-                media_url = media[0].get("url")
-                status_id = data.get("id")
+                media_url = self._media_url_from_status(notif.get("status", {}))
+                status_id = status.get("id")
 
             if not media_url:
                 return
-            
+
+            return self._handle_media(user, media_url, status_id, config, callback, testing, hashtag)
+
+        def _media_url_from_status(self, status):
+            status = notif.get("status", {})
+
+            if status.get("sensitive"):
+                return
+
+            if status.get("reblog"):
+                return
+
+            if status.get("in_reply_to_id"):
+                return
+
+            media = status.get("media_attachments", [])
+
+            if not media:
+                return
+
+            return media[0].get("url")
+
+        def _handle_media(self, user, media_url, status_id, config, callback, testing, hashtag)
+            if exclude_user and exclude_user == user:
+                return
+
             r = requests.get(media_url, stream=True)
 
             content_type = r.headers['content-type']
