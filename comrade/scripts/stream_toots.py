@@ -18,6 +18,7 @@ import requests
 @click.option("--callback", type=str, required=True)
 @click.option("--exclude-user", type=str)
 @click.option("--testing", is_flag=True, default=False)
+@click.option("--hashtag", type=str)
 def main(config, callback, exclude_user=None, testing=False):
     class Streamer(StreamListener):
         def on_notification(self, notif):
@@ -98,7 +99,11 @@ def main(config, callback, exclude_user=None, testing=False):
                 api_base_url = cfg["mastodon_instance"],
             )
 
-            client.stream_user(Streamer())
+            if hashtag:
+                client.stream_hashtag(hashtag, Streamer())
+
+            else:
+                client.stream_user(Streamer())
 
         except Exception:
             time.sleep(10)
