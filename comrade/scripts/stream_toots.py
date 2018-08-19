@@ -3,6 +3,7 @@
 import click
 import json
 import mimetypes
+import os
 import subprocess
 import time
 
@@ -25,23 +26,29 @@ def main(config, callback, exclude_user=None, testing=False):
             if exclude_user and exclude_user == user:
                 return
 
-            data = notif.get("status", {})
+            if notif.get("type") == "follow":
+                media_url = notif.get("account", {}).get("avatar_static")
+                status_id = None
 
-            if data.get("sensitive"):
-                return
+            else:
+                data = notif.get("status", {})
 
-            if data.get("reblog"):
-                return
+                if data.get("sensitive"):
+                    return
 
-            if data.get("in_reply_to_id"):
-                return
+                if data.get("reblog"):
+                    return
 
-            media = data.get("media_attachments", [])
+                if data.get("in_reply_to_id"):
+                    return
 
-            if not media:
-                return
+                media = data.get("media_attachments", [])
 
-            media_url = media[0].get("url")
+                if not media:
+                    return
+
+                media_url = media[0].get("url")
+                status_id = data.get("id")
 
             if not media_url:
                 return
@@ -55,7 +62,7 @@ def main(config, callback, exclude_user=None, testing=False):
             if extension.startswith(".jp"):
                 extension = ".jpg"  # sigh
 
-            filename = "toot{0}".format(extension)
+            filename = "$RANDOM{0}".format(extension)
 
             # https://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
             with open(filename, 'wb') as fh:
@@ -67,13 +74,15 @@ def main(config, callback, exclude_user=None, testing=False):
             Process toot
             effect_name=`artmangler random {filename}` && post-media --config {config} --image mangled.png --status "{user} vs. $effect_name" --in-reply-to {id}
             """
-            command = callback.format(filename=filename, config=config, user=user, id=data["id"])
+            command = callback.format(filename=filename, config=config, user=user, id=status_id)
 
             if testing:
                 print(command)
 
             else:
                 subprocess.call(command, shell=True)
+
+            os.remove(filename)
 
             # print(json.dumps(data, indent=4))
 
