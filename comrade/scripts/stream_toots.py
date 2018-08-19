@@ -52,6 +52,9 @@ def main(config, callback, exclude_user=None, testing=False):
 
             extension = mimetypes.guess_extension(content_type, strict=False)
 
+            if extension.startswith(".jp"):
+                extension = ".jpg"  # sigh
+
             filename = "toot{0}".format(extension)
 
             # https://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
