@@ -14,11 +14,10 @@ import requests
 
 @click.command()
 @click.option("--config", type=click.Path(dir_okay=False), required=True)
-@click.option("--track", type=str, required=True)
 @click.option("--callback", type=str, required=True)
 @click.option("--exclude-user", type=str)
 @click.option("--testing", is_flag=True, default=False)
-def main(config, track, callback, exclude_user=None, testing=False):
+def main(config, callback, exclude_user=None, testing=False):
     class Streamer(StreamListener):
         def on_notification(self, notif):
             user = notif.get("account", {}).get("acct")
