@@ -15,6 +15,7 @@ setup(name='comrade',
         [console_scripts]
         post-media=comrade.scripts.post_media:main
         stream-media=comrade.scripts.stream_media:main
+        stream-toots=comrade.scripts.stream_toots:main
         ''',
 
       install_requires=[
