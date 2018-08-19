@@ -36,7 +36,9 @@ def main(config, callback, exclude_user=None, testing=False, hashtag=None):
                 status_id = None
 
             else:
-                media_url = self._media_url_from_status(notif.get("status", {}))
+                status = notif.get("status", {})
+
+                media_url = self._media_url_from_status(status)
                 status_id = status.get("id")
 
             if not media_url:
@@ -45,8 +47,6 @@ def main(config, callback, exclude_user=None, testing=False, hashtag=None):
             return self._handle_media(user, media_url, status_id, config, callback, testing, hashtag)
 
         def _media_url_from_status(self, status):
-            status = notif.get("status", {})
-
             if status.get("sensitive"):
                 return
 
@@ -76,7 +76,7 @@ def main(config, callback, exclude_user=None, testing=False, hashtag=None):
             if extension.startswith(".jp"):
                 extension = ".jpg"  # sigh
 
-            filename = "$RANDOM{0}".format(extension)
+            filename = "{0}{1}".format(random.randint(1, 1000000), extension)
 
             # https://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
             with open(filename, 'wb') as fh:
