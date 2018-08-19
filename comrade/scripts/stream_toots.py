@@ -19,7 +19,7 @@ import requests
 @click.option("--exclude-user", type=str)
 @click.option("--testing", is_flag=True, default=False)
 @click.option("--hashtag", type=str)
-def main(config, callback, exclude_user=None, testing=False):
+def main(config, callback, exclude_user=None, testing=False, hashtag=None):
     class Streamer(StreamListener):
         def on_notification(self, notif):
             user = notif.get("account", {}).get("acct")
