@@ -18,12 +18,7 @@ pip install git+https://github.com/aayars/comrade
 ```
 
 
-## Fuck Twitter
-
-Twitter support is deprecated. When it breaks, it breaks. Let Twitter die.
-
-
-### Config file
+## Config
 
 Comrade needs your connection info in a config file. Create a file named `config.json` with the following keys:
 
@@ -56,3 +51,8 @@ Stream image tweets, and handle them with a callback.
 ### stream-toots
 
 Stream image toots, and handle them with a callback.
+
+
+## Fuck Twitter
+
+Twitter support is deprecated. When it breaks, it breaks. Let Twitter die.
