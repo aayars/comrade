@@ -63,7 +63,7 @@ def main(config, callback, exclude_user=None, testing=False, hashtag=None):
 
             return media[0].get("url")
 
-        def _handle_media(self, user, media_url, status_id, config, callback, testing, hashtag)
+        def _handle_media(self, user, media_url, status_id, config, callback, testing, hashtag):
             if exclude_user and exclude_user == user:
                 return
 
