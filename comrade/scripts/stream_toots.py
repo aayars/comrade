@@ -33,7 +33,7 @@ def main(config, callback, exclude_user=None, testing=False):
 
             if notif.get("type") == "follow":
                 media_url = notif.get("account", {}).get("avatar_static")
-                status_id = None
+                status_id = ""
 
             else:
                 status = notif.get("status", {})
