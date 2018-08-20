@@ -35,7 +35,7 @@ def main(config, callback, exclude_user=None, testing=False):
                 media_url = notif.get("account", {}).get("avatar_static")
                 status_id = ""
 
-            else:
+            elif notif.get("type") != "favourite":
                 status = notif.get("status", {})
 
                 media_url = self._media_url_from_status(status)
