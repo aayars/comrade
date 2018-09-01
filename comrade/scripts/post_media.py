@@ -11,7 +11,8 @@ from twython import Twython
 @click.option("--status", type=str, required=True)
 @click.option("--in-reply-to", type=str)
 @click.option("--sensitive", is_flag=True, default=False)
-def main(config, image, status, in_reply_to=None, sensitive=False):
+@click.option("--visibility", type=click.Choice(["public", "unlisted", "private", "direct"]), default="public", help="Post visibility (Mastodon only)")
+def main(config, image, status, in_reply_to=None, sensitive=False, visibility="public"):
     config = json.load(open(config))
 
     if config.get("api_key"):
@@ -46,7 +47,7 @@ def main(config, image, status, in_reply_to=None, sensitive=False):
             else:
                 media_ids = None
 
-            mastodon.status_post(status, in_reply_to_id=in_reply_to, media_ids=media_ids, sensitive=sensitive)
+            mastodon.status_post(status, in_reply_to_id=in_reply_to, media_ids=media_ids, sensitive=sensitive, visibility=visibility)
 
         except Exception as e:
             pass
