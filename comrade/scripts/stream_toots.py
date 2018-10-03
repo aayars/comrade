@@ -26,8 +26,9 @@ def main(config, callback, exclude_user=None, testing=False):
 
             user = status.get("account", {}).get("acct")
             visibility = status.get("visibility", "public")
+            sensitive = status.get("sensitive", False)
 
-            return self._handle_media(user, media_url, status_id, visibility, config, callback, testing)
+            return self._handle_media(user, media_url, status_id, visibility, sensitive, config, callback, testing)
 
         def on_notification(self, notif):
             user = notif.get("account", {}).get("acct")
@@ -36,6 +37,7 @@ def main(config, callback, exclude_user=None, testing=False):
                 media_url = notif.get("account", {}).get("avatar_static")
                 status_id = ""
                 visibility = "direct"
+                sensitive = False
 
             elif notif.get("type") != "favourite":
                 status = notif.get("status", {})
@@ -43,11 +45,12 @@ def main(config, callback, exclude_user=None, testing=False):
                 media_url = self._media_url_from_status(status)
                 status_id = status.get("id")
                 visibility = status.get("visibility", "public")
+                sensitive = status.get("sensitive", False)
 
             if not media_url:
                 return
 
-            return self._handle_media(user, media_url, status_id, visibility, config, callback, testing)
+            return self._handle_media(user, media_url, status_id, visibility, sensitive, config, callback, testing)
 
         def _media_url_from_status(self, status):
             if status.get("sensitive"):
@@ -66,7 +69,7 @@ def main(config, callback, exclude_user=None, testing=False):
 
             return media[0].get("url")
 
-        def _handle_media(self, user, media_url, status_id, visibility, config, callback, testing):
+        def _handle_media(self, user, media_url, status_id, visibility, sensitive, config, callback, testing):
             if exclude_user and exclude_user == user:
                 return
 
@@ -91,7 +94,9 @@ def main(config, callback, exclude_user=None, testing=False):
             Process toot
             effect_name=`artmangler random {filename}` && post-media --config {config} --image mangled.png --status "{user} vs. $effect_name" --in-reply-to {id}
             """
-            command = callback.format(filename=filename, config=config, user=user, id=status_id, visibility=visibility)
+            sensitive_flag = '--sensitive' if sensitive else ''
+
+            command = callback.format(filename=filename, config=config, user=user, id=status_id, visibility=visibility, sensitive=sensitive_flag)
 
             if testing:
                 print(command)
