@@ -53,9 +53,6 @@ def main(config, callback, exclude_user=None, testing=False):
             return self._handle_media(user, media_url, status_id, visibility, sensitive, config, callback, testing)
 
         def _media_url_from_status(self, status):
-            if status.get("sensitive"):
-                return
-
             if status.get("reblog"):
                 return
 
