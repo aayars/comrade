@@ -66,10 +66,11 @@ def main(config, callback, exclude_user=None, testing=False):
                 media_url = self._media_url_from_status(status, are_replies_okay(status.get("content")))
 
                 if not media_url:
-                    status_id = status.get("in_reply_to_id")
+                    # Don't redefine status_id, we want to respond to the original toot.
+                    in_reply_to_status_id = status.get("in_reply_to_id")
 
-                    if status_id:
-                        status = client.status(status_id)
+                    if in_reply_to_status_id:
+                        status = client.status(in_reply_to_status_id)
 
                     media_url = self._media_url_from_status(status, are_replies_okay(orig_status.get("content")))
 
