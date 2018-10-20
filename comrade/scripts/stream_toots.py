@@ -14,13 +14,13 @@ from mastodon.streaming import StreamListener
 import requests
 
 
-class are_replies_okay(content):
+def are_replies_okay(content):
     """ Return True if the content contains the magic terms "REPLIES_OK" or "REPLY_OK" """
 
     return "REPLIES_OK" in content or "REPLY_OK" in content
 
 
-class strip_toot(content):
+def strip_toot(content):
     """ Strip a toot bare of all but its core essence """
 
     stripped = re.sub(r'<span.*?>.*</span>', "", content)
