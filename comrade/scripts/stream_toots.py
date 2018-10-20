@@ -71,7 +71,7 @@ def main(config, callback, exclude_user=None, testing=False):
                     status = orig_status
                     status_id = status.get("id")
 
-                media_url = self._media_url_from_status(status, are_replies_okay(status.get("content"))
+                media_url = self._media_url_from_status(status, are_replies_okay(status.get("content")))
                 visibility = status.get("visibility", "public")
                 sensitive = status.get("sensitive", False)
 
