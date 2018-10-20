@@ -64,10 +64,7 @@ def main(config, callback, exclude_user=None, testing=False):
                 if status_id:
                     status = client.status(status_id)
 
-                    if not status:
-                        return
-
-                else:
+                if not status_id or not status:
                     status = orig_status
                     status_id = status.get("id")
 
