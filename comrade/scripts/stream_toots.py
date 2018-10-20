@@ -14,12 +14,33 @@ from mastodon.streaming import StreamListener
 import requests
 
 
+class are_replies_okay(content):
+    """ Return True if the content contains the magic terms "REPLIES_OK" or "REPLY_OK" """
+
+    return "REPLIES_OK" in content or "REPLY_OK" in content
+
+
+class strip_toot(content):
+    """ Strip a toot bare of all but its core essence """
+
+    stripped = re.sub(r'<span.*?>.*</span>', "", content)
+    stripped = re.sub(r'<p>', "", stripped)
+    stripped = re.sub(r'</p>', "\n\n", stripped)
+    stripped = re.sub(r'<br.*?>', "\n", stripped)
+
+    stripped = html.unescape(stripped)
+
+    return stripped
+
+
 @click.command()
 @click.option("--config", type=click.Path(dir_okay=False), required=True)
 @click.option("--callback", type=str, required=True)
 @click.option("--exclude-user", type=str)
 @click.option("--testing", is_flag=True, default=False)
 def main(config, callback, exclude_user=None, testing=False):
+    client = None
+
     class Streamer(StreamListener):
         def on_update(self, status):
             media_url = self._media_url_from_status(status)
@@ -33,7 +54,30 @@ def main(config, callback, exclude_user=None, testing=False):
         def on_notification(self, notif):
             user = notif.get("account", {}).get("acct")
 
-            if notif.get("type") == "follow":
+            # To avoid death loops with other bots, ignore reply toots unless overridden.
+            replies_ok = False
+
+            if notif.get("type") == "mention":
+                orig_status = notif.get("status", {})
+                status_id = orig_status.get("in_reply_to_id")
+
+                if status_id:
+                    status = client.status(status_id)
+
+                    if not status:
+                        return
+
+                else:
+                    status = orig_status
+                    status_id = status.get("id")
+
+                media_url = self._media_url_from_status(status, are_replies_okay(status.get("content"))
+                visibility = status.get("visibility", "public")
+                sensitive = status.get("sensitive", False)
+
+            elif notif.get("type") == "follow":
+                status = None
+
                 media_url = notif.get("account", {}).get("avatar_static")
                 status_id = ""
                 visibility = "direct"
@@ -42,7 +86,7 @@ def main(config, callback, exclude_user=None, testing=False):
             elif notif.get("type") != "favourite":
                 status = notif.get("status", {})
 
-                media_url = self._media_url_from_status(status)
+                media_url = self._media_url_from_status(status, are_replies_okay(status.get("content"))
                 status_id = status.get("id")
                 visibility = status.get("visibility", "public")
                 sensitive = status.get("sensitive", False)
@@ -52,11 +96,11 @@ def main(config, callback, exclude_user=None, testing=False):
 
             return self._handle_media(user, media_url, status_id, visibility, sensitive, config, callback, testing)
 
-        def _media_url_from_status(self, status):
+        def _media_url_from_status(self, status, replies_ok=False):
             if status.get("reblog"):
                 return
 
-            if status.get("in_reply_to_id"):
+            if not replies_ok and status.get("in_reply_to_id"):
                 return
 
             media = status.get("media_attachments", [])
@@ -67,7 +111,7 @@ def main(config, callback, exclude_user=None, testing=False):
             return media[0].get("url")
 
         def _handle_media(self, user, media_url, status_id, visibility, sensitive, config, callback, testing):
-            if exclude_user and exclude_user == user:
+            if exclude_user == user:
                 return
 
             r = requests.get(media_url, stream=True)
