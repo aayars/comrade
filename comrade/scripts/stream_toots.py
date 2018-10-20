@@ -43,7 +43,7 @@ def main(config, callback, exclude_user=None, testing=False):
 
     class Streamer(StreamListener):
         def on_update(self, status):
-            media_url = self._media_url_from_status(status)
+            media_url = self._media_url_from_status(status, are_replies_okay(status.get("content")))
 
             user = status.get("account", {}).get("acct")
             visibility = status.get("visibility", "public")
