@@ -59,16 +59,20 @@ def main(config, callback, exclude_user=None, testing=False):
 
             if notif.get("type") == "mention":
                 orig_status = notif.get("status", {})
-                status_id = orig_status.get("in_reply_to_id")
 
-                if status_id:
-                    status = client.status(status_id)
-
-                if not status_id or not status:
-                    status = orig_status
-                    status_id = status.get("id")
+                status = orig_status
+                status_id = status.get("id")
 
                 media_url = self._media_url_from_status(status, are_replies_okay(status.get("content")))
+
+                if not media_url:
+                    status_id = status.get("in_reply_to_id")
+
+                    if status_id:
+                        status = client.status(status_id)
+
+                    media_url = self._media_url_from_status(status, are_replies_okay(orig_status.get("content")))
+
                 visibility = status.get("visibility", "public")
                 sensitive = status.get("sensitive", False)
 
