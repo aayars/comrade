@@ -86,7 +86,7 @@ def main(config, callback, exclude_user=None, testing=False):
             elif notif.get("type") != "favourite":
                 status = notif.get("status", {})
 
-                media_url = self._media_url_from_status(status, are_replies_okay(status.get("content"))
+                media_url = self._media_url_from_status(status, are_replies_okay(status.get("content")))
                 status_id = status.get("id")
                 visibility = status.get("visibility", "public")
                 sensitive = status.get("sensitive", False)
