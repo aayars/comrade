@@ -1,8 +1,9 @@
 FROM debian:9-slim
 
 RUN apt update && \
-    apt install -y git python3 python3-cryptography python3-pip python3-setuptools python3-six && \
+    apt install -y git python3 python3-pip python3-setuptools python3-six && \
     \
+    pip3 install cryptography==1.9.0 && \
     pip3 install git+https://github.com/aayars/comrade && \
     \
     apt remove -y git python3-pip && \
