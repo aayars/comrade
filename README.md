@@ -5,6 +5,8 @@
 
 This repo is just a set of scripts to post and stream ~~tweets~~ toots from the command line.
 
+Twitter support is deprecated. When it breaks, it breaks forever.
+
 
 ## Install
 
@@ -53,6 +55,12 @@ Stream image tweets, and handle them with a callback.
 Stream image toots, and handle them with a callback.
 
 
-## Fuck Twitter
+## Docker
 
-Twitter support is deprecated. When it breaks, it breaks. Let Twitter die.
+If running via [Docker](https://hub.docker.com/r/aayars/comrade/), mount the config file with the `-v` argument to `docker run`.
+
+This example mounts a directory named `configs`, with `config.json` inside.
+
+```
+docker run -v configs:/configs post-media --config /configs/config.json ...
+```

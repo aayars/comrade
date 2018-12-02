@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(name='comrade',
       version='0.0.1',
-      description='Comrade is good Twitter bot. Салюд!',
+      description='Comrade is good Mastodon bot. Салюд!',
       author='Alex Ayars',
       author_email='aayars@gmail.com',
       url='http://github.com/aayars/comrade/',
