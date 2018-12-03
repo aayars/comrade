@@ -7,6 +7,9 @@ This repo is just a set of scripts to post and stream ~~tweets~~ toots from the 
 
 Twitter support is deprecated. When it breaks, it breaks forever.
 
+[![Build Status](https://travis-ci.com/aayars/comrade.svg?branch=master)](https://travis-ci.com/aayars/comrade)
+[![Docker Build Status](https://img.shields.io/docker/build/aayars/comrade.svg)](https://hub.docker.com/r/aayars/comrade)
+
 
 ## Install
 
