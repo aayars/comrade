@@ -1,3 +1,4 @@
+import html
 import mimetypes
 import os
 import random
@@ -105,20 +106,23 @@ def strip_toot(content):
     stripped = re.sub(r'</p>', '\n\n', stripped)
     stripped = re.sub(r'<br.*?>', '\n', stripped)
 
-    stripped = stripped.unescape(stripped)
+    stripped = html.unescape(stripped)
 
     return stripped
 
 
 class Streamer(StreamListener):
-    def __init__(self, config, callback, exclude_user, **kwargs):
+    def __init__(self, config, client, callback, exclude_user, **kwargs):
         print('Streamer is initializing...')
 
-        self.__init__(**kwargs)
+        super(Streamer, self).__init__(**kwargs)
 
         self.callback = callback
         self.config = config
+        self.client = client
         self.exclude_user = exclude_user
+
+        print('    ... ready!')
 
     def on_update(self, status):
         print('Got update {}'.format(status))
@@ -188,10 +192,10 @@ class Streamer(StreamListener):
                     filename=media_filename,
                     config=self.config,
                     user=account.get('acct'),
-                    id=status.get('id') if status else None,
+                    id=status.get('id', 'None') if status else 'None',
                     visibility=status.get('visibility', 'public') if status else 'direct',
                     sensitive='--sensitive' if status and status.get('sensitive') else '',
-                    content=strip_toot(status.get('content', '')) if status else None,
+                    content=strip_toot(status.get('content', 'None')) if status else 'None',
                 )
 
                 print('    ... running command:')
@@ -206,7 +210,8 @@ class Streamer(StreamListener):
         except Exception as e:
             print(str(e))
 
-        os.remove(media_filename)
+        if media_filename:
+            os.remove(media_filename)
 
     def on_abort(self, status_code, data):
         print(status_code)

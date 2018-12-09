@@ -29,7 +29,9 @@ def main(config, callback, exclude_user=None):
 
             print("Have client {}".format(client))
 
-            client.stream_user(Streamer(config=config, callback=callback, exclude_user=exclude_user))
+            client.stream_user(Streamer(config, client, callback, exclude_user))
 
-        except Exception:
+        except Exception as e:
+            print(str(e))
+
             time.sleep(10)
