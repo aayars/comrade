@@ -33,17 +33,17 @@ def are_replies_okay(status, account, client, exclude_user=None, limit=5, sleep_
     if exclude_user and exclude_user == account.get('acct'):
         return
 
-    if status.get("reblog"):
+    if status.get('reblog'):
         return
 
     for i in range(limit):
-        if not status.get("in_reply_to_id"):
+        if not status.get('in_reply_to_id'):
             return True
 
         if i in (0, 1) and not are_bots_okay(account):  # Check orig post and parent for #nobot
             return False
 
-        status = client.status(status.get("in_reply_to_id"))
+        status = client.status(status.get('in_reply_to_id'))
 
         time.sleep(sleep_time)  # Don't rapid-fire client requests at this hapless instance
 
@@ -58,14 +58,14 @@ def media_url_from_status(status, client):
     :param Mastodon client: A Mastodon client from the Mastodon.py API
     """
 
-    media = status.get("media_attachments", [])
+    media = status.get('media_attachments', [])
 
-    if not media and status.get("in_reply_to_id"):
-        status = client.status(status.get("in_reply_to_id"))
+    if not media and status.get('in_reply_to_id'):
+        status = client.status(status.get('in_reply_to_id'))
 
-        media = status.get("media_attachments", [])
+        media = status.get('media_attachments', [])
 
-    return media[0].get("url") if media else None
+    return media[0].get('url') if media else None
 
 
 def download_media(media_url):
@@ -80,10 +80,10 @@ def download_media(media_url):
 
     extension = mimetypes.guess_extension(content_type, strict=False)
 
-    if extension.startswith(".jp"):
-        extension = ".jpg"  # sigh
+    if extension.startswith('.jp'):
+        extension = '.jpg'  # sigh
 
-    filename = "{0}{1}".format(random.randint(1, 1000000), extension)
+    filename = '{0}{1}'.format(random.randint(1, 1000000), extension)
 
     # https://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
     with open(filename, 'wb') as fh:
@@ -100,10 +100,10 @@ def strip_toot(content):
     :param str content:
     """
 
-    stripped = re.sub(r'<span.*?>.*</span>', "", content)
-    stripped = re.sub(r'<p>', "", stripped)
-    stripped = re.sub(r'</p>', "\n\n", stripped)
-    stripped = re.sub(r'<br.*?>', "\n", stripped)
+    stripped = re.sub(r'<span.*?>.*</span>', '', content)
+    stripped = re.sub(r'<p>', '', stripped)
+    stripped = re.sub(r'</p>', '\n\n', stripped)
+    stripped = re.sub(r'<br.*?>', '\n', stripped)
 
     stripped = stripped.unescape(stripped)
 
@@ -112,6 +112,8 @@ def strip_toot(content):
 
 class Streamer(StreamListener):
     def __init__(self, config, callback, exclude_user, **kwargs):
+        print('Streamer is initializing...')
+
         self.__init__(**kwargs)
 
         self.callback = callback
@@ -119,46 +121,56 @@ class Streamer(StreamListener):
         self.exclude_user = exclude_user
 
     def on_update(self, status):
-        account = status.get("account", {})
+        print('Got update {}'.format(status))
+
+        account = status.get('account', {})
 
         if not are_bots_okay(account):
             return
+
+        print('    ... bots are okay!')
 
         media_url = media_url_from_status(status, self.client)
 
         return self._handle_reply(status, media_url, account)
 
     def on_notification(self, notif):
-        account = notif.get("account", {})
+        print('Got notification {}'.format(notif))
+
+        account = notif.get('account', {})
 
         if not are_bots_okay(account):
             return
 
-        if notif.get("type") == "mention":
-            orig_status = notif.get("status", {})
+        print('    ... bots are okay!')
+
+        if notif.get('type') == 'mention':
+            orig_status = notif.get('status', {})
 
             status = orig_status
 
             media_url = media_url_from_status(status, self.client)
 
-        elif notif.get("type") == "follow":
+        elif notif.get('type') == 'follow':
             status = None
 
-            media_url = account.get("avatar_static")
+            media_url = account.get('avatar_static')
 
-        elif notif.get("type") != "favourite":
-            status = notif.get("status", {})
+        elif notif.get('type') != 'favourite':
+            status = notif.get('status', {})
 
             media_url = media_url_from_status(status, self.client)
-
-        if not media_url:
-            return
 
         return self._handle_reply(status, media_url, account)
 
     def _handle_reply(self, status, media_url, account):
+        print('Handling reply')
+
         if not are_replies_okay(status, account, self.client, exclude_user=self.exclude_user):
             return
+
+        print('    ... replies are okay!')
+        print('    ... have media url {}'.format(media_url))
 
         media_filename = download_media(media_url) if media_url else None
 
@@ -182,7 +194,14 @@ class Streamer(StreamListener):
                     content=strip_toot(status.get('content', '')) if status else None,
                 )
 
+                print('    ... running command:')
+                print('')
+                print(command)
+                print('')
+
                 subprocess.call(command, shell=True)
+
+                print('        ... done.')
 
         except Exception as e:
             print(str(e))
