@@ -3,6 +3,7 @@ import os
 import random
 import re
 import subprocess
+import time
 
 from mastodon.streaming import StreamListener
 
@@ -10,32 +11,52 @@ import requests
 
 
 def are_bots_okay(account):
-    """ Return True unless this user's profile contains #nobot """
+    """Return True unless this user's profile contains #nobot
+
+    :param dict account: A user dict from the Mastodon.py API
+    """
 
     return '#nobot' not in account.get('note', '')
 
 
-def are_replies_okay(status, client):
-    """ Return True if the discussion thread is still pretty short. """
+def are_replies_okay(status, account, client, exclude_user=None, limit=5, sleep_time=2.5):
+    """Return True if the discussion thread is still pretty short.
+
+    :param dict status: A toot dict from the Mastodon.py API
+    :param dict account: A user dict from the Mastodon.py API
+    :param Mastodon client: A Mastodon client from the Mastodon.py API
+    :param str|None exclude_user: Don't reply to this user (usually our own name)
+    :param int limit: Discussion thread length limit
+    :param float sleep_time: How long to sleep between requests when traversing thread
+    """
+
+    if exclude_user and exclude_user == account.get('acct'):
+        return
 
     if status.get("reblog"):
         return
 
-    for i in range(6):
+    for i in range(limit):
         if not status.get("in_reply_to_id"):
             return True
 
-        if i in (0, 1) and not are_bots_okay(status.get('account', {})):  # Check orig post and parent for #nobot
+        if i in (0, 1) and not are_bots_okay(account):  # Check orig post and parent for #nobot
             return False
 
         status = client.status(status.get("in_reply_to_id"))
+
+        time.sleep(sleep_time)  # Don't rapid-fire client requests at this hapless instance
 
     # Already enough responses in a thread
     return False
 
 
 def media_url_from_status(status, client):
-    """ Check the given status (or its parent) for a media attachment, and return the url or None. """
+    """Check the given status (or its parent) for a media attachment, and return the url or None.
+
+    :param dict status: A toot dict from the Mastodon.py API
+    :param Mastodon client: A Mastodon client from the Mastodon.py API
+    """
 
     media = status.get("media_attachments", [])
 
@@ -48,7 +69,10 @@ def media_url_from_status(status, client):
 
 
 def download_media(media_url):
-    """ Saves the given media url, and returns the filename. """
+    """Saves the given media url, and returns the filename.
+
+    :param str media_url:
+    """
 
     r = requests.get(media_url, stream=True)
 
@@ -71,7 +95,10 @@ def download_media(media_url):
 
 
 def strip_toot(content):
-    """ Strip a toot bare of all but its core essence """
+    """Strip a toot's content bare of all but its core essence.
+
+    :param str content:
+    """
 
     stripped = re.sub(r'<span.*?>.*</span>', "", content)
     stripped = re.sub(r'<p>', "", stripped)
@@ -92,26 +119,20 @@ class Streamer(StreamListener):
         self.exclude_user = exclude_user
 
     def on_update(self, status):
-        account = status.get("account")
+        account = status.get("account", {})
 
         if not are_bots_okay(account):
             return
 
         media_url = media_url_from_status(status, self.client)
 
-        user = account.get("acct")
-        visibility = status.get("visibility", "public")
-        sensitive = status.get("sensitive", False)
-
-        return self._respond(user, media_url, status, visibility, sensitive)
+        return self._handle_reply(status, media_url, account)
 
     def on_notification(self, notif):
         account = notif.get("account", {})
 
         if not are_bots_okay(account):
             return
-
-        user = account.get("acct")
 
         if notif.get("type") == "mention":
             orig_status = notif.get("status", {})
@@ -120,64 +141,45 @@ class Streamer(StreamListener):
 
             media_url = media_url_from_status(status, self.client)
 
-            visibility = status.get("visibility", "public")
-            sensitive = status.get("sensitive", False)
-
         elif notif.get("type") == "follow":
             status = None
 
             media_url = account.get("avatar_static")
 
-            visibility = "direct"
-            sensitive = False
-
         elif notif.get("type") != "favourite":
             status = notif.get("status", {})
 
             media_url = media_url_from_status(status, self.client)
-            visibility = status.get("visibility", "public")
-            sensitive = status.get("sensitive", False)
 
         if not media_url:
             return
 
-        return self._respond(user, media_url, status, visibility, sensitive)
+        return self._handle_reply(status, media_url, account)
 
-    def _respond(self, user, media_url, status, visibility, sensitive):
-        if self.exclude_user == user:
+    def _handle_reply(self, status, media_url, account):
+        if not are_replies_okay(status, account, self.client, exclude_user=self.exclude_user):
             return
 
-        if not are_replies_okay(status, self.client):
-            return
-
-        filename = download_media(media_url) if media_url else None
-
-        """
-        Process toot
-        effect_name=`artmangler random {filename}` && post-media --config {config} --image mangled.png --status "{user} vs. $effect_name" --in-reply-to {id}
-        """
-        status_id = status.get('id') if status else None
+        media_filename = download_media(media_url) if media_url else None
 
         try:
             if callable(self.callback):
                 self.callback(
-                    filename=filename,
-                    config=self.config,
-                    user=user,
-                    id=status_id,
-                    visibility=visibility,
-                    sensitive=sensitive
+                    status=status,
+                    account=account,
+                    client=self.client,
+                    media_filename=media_filename,
                 )
 
             else:
                 command = self.callback.format(
-                    filename=filename,
+                    filename=media_filename,
                     config=self.config,
                     user=user,
-                    id=status_id,
-                    visibility=visibility,
-                    sensitive='--sensitive' if sensitive else '',
-                    content=strip_toot(status.get('content', ''))
+                    id=status.get('id') if status else None,
+                    visibility=status.get('visibility', 'public') if status else 'direct',
+                    sensitive='--sensitive' if status and status.get('sensitive') else '',
+                    content=strip_toot(status.get('content', '')) if status else None,
                 )
 
                 subprocess.call(command, shell=True)
@@ -185,7 +187,7 @@ class Streamer(StreamListener):
         except Exception as e:
             print(str(e))
 
-        os.remove(filename)
+        os.remove(media_filename)
 
     def on_abort(self, status_code, data):
         print(status_code)

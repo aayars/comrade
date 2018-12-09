@@ -1,5 +1,8 @@
 FROM debian:9-slim
 
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
 RUN apt update && \
     apt install -y git python3 python3-pip python3-setuptools python3-six && \
     \
@@ -10,8 +13,5 @@ RUN apt update && \
     \
     apt remove -y git python3-pip && \
     apt autoremove -y
-
-ENV LC_ALL=C.UTF-8
-ENV LANG=C.UTF-8
 
 CMD post-media --help

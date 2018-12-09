@@ -129,7 +129,7 @@ def main(config, callback, exclude_user=None, testing=False):
 
             # https://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
             with open(filename, 'wb') as fh:
-                for chunk in r.iter_content(chunk_size=1024): 
+                for chunk in r.iter_content(chunk_size=1024):
                     if chunk:
                         fh.write(chunk)
 
