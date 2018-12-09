@@ -1,9 +1,9 @@
 # Comrade
 
 
-## Comrade is good ~~Twitter~~ Mastodon bot. Салюд!
+## Comrade is good Mastodon bot. Салюд!
 
-This repo is just a set of scripts to post and stream ~~tweets~~ toots from the command line.
+This repo is just a set of scripts to post and stream toots from the command line.
 
 Twitter support is deprecated. When it breaks, it breaks forever.
 
@@ -48,14 +48,37 @@ Run a script with `--help` for more info.
 Post images to Twitter and/or Mastodon (depending on what's in your config file)
 
 
-### stream-media
-
-Stream image tweets, and handle them with a callback.
-
-
 ### stream-toots
 
-Stream image toots, and handle them with a callback.
+Stream image toots from Mastodon, and handle them with a callback.
+
+Several magic tokens are available to string callbacks. Include them in the command, and they will be swapped out for real values.
+
+- `{filename}`: The media attachment filename, or `None`
+- `{config}`: The path to the comrade config file
+- `{user}`: The third-party Mastodon user who triggered this callback
+- `{id}`: The ID of the toot which triggered this callback, or `None`
+- `{visibility}`: The type of toot visibility (`public`, `unlisted`, `private`, or `direct`)
+- `{sensitive}`: The string ` --sensitive`, or empty. Intended as a flag for `post-media` (see example)
+
+```
+#!/usr/bin/env bash
+
+set -ex
+
+# Contrived example: Process images from a stream
+
+callback_command="your-image-script {filename} && post-media --config {config} --image your-output.jpg --status \"@{user}\" --in-reply-to \"{id}\" --visibility \"{visibility}\" {sensitive}"
+
+stream-toots --config configs/config.json --callback "$callback_command" --exclude-user your-user
+```
+
+
+### stream-media
+
+Stream image tweets from Twitter, and handle them with a callback.
+
+Usage is the same as stream-toots.
 
 
 ## Docker

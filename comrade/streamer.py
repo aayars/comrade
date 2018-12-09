@@ -175,7 +175,7 @@ class Streamer(StreamListener):
                 command = self.callback.format(
                     filename=media_filename,
                     config=self.config,
-                    user=user,
+                    user=account.get('acct'),
                     id=status.get('id') if status else None,
                     visibility=status.get('visibility', 'public') if status else 'direct',
                     sensitive='--sensitive' if status and status.get('sensitive') else '',
