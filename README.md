@@ -68,7 +68,7 @@ set -ex
 
 # Contrived example: Process images from a stream
 
-# Quote any args which could potentially be empty strings.
+# Quote args as shown, in case of empty string values. Don't quote `{sensitive}`, since it's a flag.
 
 callback_command="your-image-script \"{filename}\" && post-media --config {config} --image your-output.jpg --status \"@{user}\" --in-reply-to \"{id}\" --visibility \"{visibility}\" {sensitive}"
 
