@@ -54,7 +54,7 @@ Stream image toots from Mastodon, and handle them with a callback.
 
 Several magic tokens are available to string callbacks. Include them in the command, and they will be swapped out for real values.
 
-- `{filename}`: The media attachment filename, or `None`
+- `{filename}`: The media attachment filename, if any.
 - `{config}`: The path to the comrade config file
 - `{user}`: The third-party Mastodon user who triggered this callback
 - `{id}`: The ID of the toot which triggered this callback, or `None`
@@ -68,7 +68,9 @@ set -ex
 
 # Contrived example: Process images from a stream
 
-callback_command="your-image-script {filename} && post-media --config {config} --image your-output.jpg --status \"@{user}\" --in-reply-to \"{id}\" --visibility \"{visibility}\" {sensitive}"
+# Quote any args which could potentially be empty strings.
+
+callback_command="your-image-script \"{filename}\" && post-media --config {config} --image your-output.jpg --status \"@{user}\" --in-reply-to \"{id}\" --visibility \"{visibility}\" {sensitive}"
 
 stream-toots --config configs/config.json --callback "$callback_command" --exclude-user your-user
 ```

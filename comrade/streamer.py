@@ -193,10 +193,9 @@ class Streamer(StreamListener):
                     filename=media_filename,
                     config=self.config,
                     user=account.get('acct'),
-                    id=status.get('id', 'None') if status else 'None',
+                    id=status.get('id', '') if status else '',
                     visibility=status.get('visibility', 'public') if status else 'direct',
                     sensitive='--sensitive' if status and status.get('sensitive') else '',
-                    content=strip_toot(status.get('content', 'None')) if status else 'None',
                 )
 
                 print('    ... running command:')
