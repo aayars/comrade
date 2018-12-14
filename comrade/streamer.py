@@ -61,11 +61,6 @@ def media_url_from_status(status, client):
 
     media = status.get('media_attachments', [])
 
-    if not media and status.get('in_reply_to_id'):
-        status = client.status(status.get('in_reply_to_id'))
-
-        media = status.get('media_attachments', [])
-
     return media[0].get('url') if media else None
 
 
@@ -136,7 +131,7 @@ class Streamer(StreamListener):
 
         media_url = media_url_from_status(status, self.client)
 
-        return self._handle_reply(status, media_url, account)
+        return self._handle_reply(status, status.get('id'), media_url, account)
 
     def on_notification(self, notif):
         print('Got notification {}'.format(notif))
@@ -148,26 +143,32 @@ class Streamer(StreamListener):
 
         print('    ... bots are okay!')
 
+        status = notif.get('status', {})
+
+        orig_status = status
+
         if notif.get('type') == 'mention':
-            orig_status = notif.get('status', {})
-
-            status = orig_status
-
             media_url = media_url_from_status(status, self.client)
 
-        elif notif.get('type') == 'follow':
-            status = None
+            if not media_url and status.get('in_reply_to_id'):
+                parent = self.client.status(status.get("in_reply_to_id"))
 
+                media_url = media_url_from_status(parent, self.client)
+
+                if media_url:
+                    print('    ... using parent toot\'s image and privacy settings')
+
+                    status = parent
+
+        elif notif.get('type') == 'follow':
             media_url = account.get('avatar_static')
 
         elif notif.get('type') != 'favourite':
-            status = notif.get('status', {})
-
             media_url = media_url_from_status(status, self.client)
 
-        return self._handle_reply(status, media_url, account)
+        return self._handle_reply(status, orig_status.get('id'), media_url, account)
 
-    def _handle_reply(self, status, media_url, account):
+    def _handle_reply(self, status, orig_id, media_url, account):
         print('Handling reply')
 
         if not are_replies_okay(status, account, self.client, exclude_user=self.exclude_user):
