@@ -20,7 +20,7 @@ def are_bots_okay(account):
     return '#nobot' not in account.get('note', '')
 
 
-def are_replies_okay(status, account, client, exclude_user=None, limit=5, sleep_time=2.5):
+def are_replies_okay(status, account, client, exclude_user=None, limit=25, sleep_time=2.5):
     """Return True if the discussion thread is still pretty short.
 
     :param dict status: A toot dict from the Mastodon.py API
@@ -37,18 +37,23 @@ def are_replies_okay(status, account, client, exclude_user=None, limit=5, sleep_
     if status.get('reblog'):
         return
 
+    print('    ... checking length of discussion thread')
+
     for i in range(limit):
         if not status.get('in_reply_to_id'):
             return True
 
         if i in (0, 1) and not are_bots_okay(account):  # Check orig post and parent for #nobot
+            print('    ... bots not are okay for {}'.format(account.get('acct')))
+
             return False
 
         status = client.status(status.get('in_reply_to_id'))
 
         time.sleep(sleep_time)  # Don't rapid-fire client requests at this hapless instance
 
-    # Already enough responses in a thread
+    print('    ... too many responses in the thread already (limit: {})'.format(limit))
+
     return False
 
 
@@ -120,38 +125,29 @@ class Streamer(StreamListener):
         print('    ... ready!')
 
     def on_update(self, status):
-        print('Got update {}'.format(status))
-
         account = status.get('account', {})
 
-        if not are_bots_okay(account):
-            return
-
-        print('    ... bots are okay!')
+        print('Got a status update from {}'.format(account.get('acct')))
 
         media_url = media_url_from_status(status, self.client)
 
         return self._handle_reply(status, status.get('id'), media_url, account)
 
     def on_notification(self, notif):
-        print('Got notification {}'.format(notif))
-
         account = notif.get('account', {})
 
-        if not are_bots_okay(account):
-            return
-
-        print('    ... bots are okay!')
+        print('Got a {kind} from {account}'.format(kind=notif.get('type'), account=account.get('acct')))
 
         status = notif.get('status', {})
-
         orig_status = status
+
+        media_url = None
 
         if notif.get('type') == 'mention':
             media_url = media_url_from_status(status, self.client)
 
             if not media_url and status.get('in_reply_to_id'):
-                parent = self.client.status(status.get("in_reply_to_id"))
+                parent = self.client.status(status.get('in_reply_to_id'))
 
                 media_url = media_url_from_status(parent, self.client)
 
@@ -166,26 +162,34 @@ class Streamer(StreamListener):
         elif notif.get('type') != 'favourite':
             media_url = media_url_from_status(status, self.client)
 
-        return self._handle_reply(status, orig_status.get('id'), media_url, account)
+        return self._handle_reply(status, orig_status, media_url, account)
 
-    def _handle_reply(self, status, orig_id, media_url, account):
+    def _handle_reply(self, status, orig_status, media_url, account):
         print('Handling reply')
 
         if not are_replies_okay(status, account, self.client, exclude_user=self.exclude_user):
+            print('    ... replies are not okay.')
+
             return
 
         print('    ... replies are okay!')
-        print('    ... have media url {}'.format(media_url))
+
+        if media_url:
+            print('    ... downloading {}'.format(media_url))
+
+        else:
+            print('    ... no media URL.')
 
         media_filename = download_media(media_url) if media_url else None
 
         try:
             if callable(self.callback):
                 self.callback(
-                    status=status,
                     account=account,
                     client=self.client,
                     media_filename=media_filename,
+                    orig_status=orig_status,
+                    status=status,
                 )
 
             else:
@@ -193,7 +197,7 @@ class Streamer(StreamListener):
                     filename=media_filename,
                     config=self.config,
                     user=account.get('acct'),
-                    id=status.get('id', '') if status else '',
+                    id=orig_status.get('id', '') if orig_status else '',
                     visibility=status.get('visibility', 'public') if status else 'direct',
                     sensitive='--sensitive' if status and status.get('sensitive') else '',
                 )

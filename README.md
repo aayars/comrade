@@ -11,14 +11,14 @@ Twitter support is deprecated. When it breaks, it breaks forever.
 [![Docker Build Status](https://img.shields.io/docker/build/aayars/comrade.svg)](https://hub.docker.com/r/aayars/comrade)
 
 
-## Install
+## Installing and Upgrading
 
 ```
 /usr/bin/python3 -m venv venv
 
 source venv/bin/activate
 
-pip install git+https://github.com/aayars/comrade
+pip install --upgrade git+https://github.com/aayars/comrade
 
 ```
 
