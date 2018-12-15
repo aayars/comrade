@@ -32,21 +32,20 @@ def are_replies_okay(status, account, client, exclude_user=None, limit=25, sleep
     """
 
     if exclude_user and exclude_user == account.get('acct'):
-        return
+        print('    ... excluding user {}'.format(exclude_user))
 
-    if status.get('reblog'):
-        return
+        return False
 
     print('    ... checking length of discussion thread')
 
     for i in range(limit):
-        if not status.get('in_reply_to_id'):
-            return True
-
         if i in (0, 1) and not are_bots_okay(account):  # Check orig post and parent for #nobot
             print('    ... bots not are okay for {}'.format(account.get('acct')))
 
             return False
+
+        if not status.get('in_reply_to_id'):
+            return True
 
         status = client.status(status.get('in_reply_to_id'))
 
@@ -131,7 +130,7 @@ class Streamer(StreamListener):
 
         media_url = media_url_from_status(status, self.client)
 
-        return self._handle_reply(None, status, status.get('id'), media_url, account)
+        return self._handle_reply(None, status, status, media_url, account)
 
     def on_notification(self, notif):
         account = notif.get('account', {})
@@ -166,25 +165,30 @@ class Streamer(StreamListener):
 
         return self._handle_reply(notif_type, status, orig_status, media_url, account)
 
-    def _handle_reply(notif_type, self, status, orig_status, media_url, account):
-        print('Handling reply')
-
-        if not are_replies_okay(status, account, self.client, exclude_user=self.exclude_user):
-            print('    ... replies are not okay.')
-
-            return
-
-        print('    ... replies are okay!')
-
-        if media_url:
-            print('    ... downloading {}'.format(media_url))
-
-        else:
-            print('    ... no media URL.')
-
-        media_filename = download_media(media_url) if media_url else None
-
+    def _handle_reply(self, notif_type, status, orig_status, media_url, account):
         try:
+            if not are_bots_okay(account):
+                print('    ... bots are not okay for {user}'.format(user=account.get('acct')))
+
+                return
+
+            print('    ... bots are okay!')
+
+            if not are_replies_okay(status, account, self.client, exclude_user=self.exclude_user):
+                print('    ... replies are not okay.')
+
+                return
+
+            print('    ... replies are okay!')
+
+            if media_url:
+                print('    ... downloading {}'.format(media_url))
+
+            else:
+                print('    ... no media URL.')
+
+            media_filename = download_media(media_url) if media_url else None
+
             if callable(self.callback):
                 self.callback(
                     account=account,
