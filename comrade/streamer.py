@@ -131,7 +131,7 @@ class Streamer(StreamListener):
 
         media_url = media_url_from_status(status, self.client)
 
-        return self._handle_reply(status, status.get('id'), media_url, account)
+        return self._handle_reply(None, status, status.get('id'), media_url, account)
 
     def on_notification(self, notif):
         account = notif.get('account', {})
@@ -143,7 +143,9 @@ class Streamer(StreamListener):
 
         media_url = None
 
-        if notif.get('type') == 'mention':
+        notif_type = notif.get('type')
+
+        if notif_type == 'mention':
             media_url = media_url_from_status(status, self.client)
 
             if not media_url and status.get('in_reply_to_id'):
@@ -156,15 +158,15 @@ class Streamer(StreamListener):
 
                     status = parent
 
-        elif notif.get('type') == 'follow':
+        elif notif_type == 'follow':
             media_url = account.get('avatar_static')
 
-        elif notif.get('type') != 'favourite':
+        elif notif_type == 'reblog':
             media_url = media_url_from_status(status, self.client)
 
-        return self._handle_reply(status, orig_status, media_url, account)
+        return self._handle_reply(notif_type, status, orig_status, media_url, account)
 
-    def _handle_reply(self, status, orig_status, media_url, account):
+    def _handle_reply(notif_type, self, status, orig_status, media_url, account):
         print('Handling reply')
 
         if not are_replies_okay(status, account, self.client, exclude_user=self.exclude_user):
@@ -188,6 +190,7 @@ class Streamer(StreamListener):
                     account=account,
                     client=self.client,
                     media_filename=media_filename,
+                    notif_type=notif_type,
                     orig_status=orig_status,
                     status=status,
                 )
