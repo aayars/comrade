@@ -29,8 +29,8 @@ def online_callback(client=None, **kwargs):
 
     if queued_count:
         message = 'Hello, @{}!\n\n' \
-            'Your job is around place {} in queue, and will be processed ASAP.\n\n' \
-            'Please stand by, your toot is important to us.'
+            'You are around place {} in queue.\n\n' \
+            'Stand by, your toot is important.'
             
         message = message.format(kwargs['account'].get('acct'), queued_count + 1)
 
