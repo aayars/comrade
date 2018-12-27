@@ -3,7 +3,7 @@
 
 ## Comrade is good Mastodon bot. Салюд!
 
-This repo is just a set of scripts to post and stream toots from the command line.
+This repo is a set of scripts to post and stream toots from the command line.
 
 Twitter support is deprecated. When it breaks, it breaks forever.
 

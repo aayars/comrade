@@ -110,6 +110,70 @@ def strip_toot(content):
     return stripped
 
 
+def handle_reply(streamer=None, notif_type=None, status=None, orig_status=None, media_url=None, account=None):
+    print('    ... Handling reply for status {}'.format(status.get('id')))
+
+    try:
+        if not are_bots_okay(account):
+            print('    ... bots are not okay for {user}'.format(user=account.get('acct')))
+
+            return
+
+        print('    ... bots are okay!')
+
+        if not are_replies_okay(status, account, streamer.client, exclude_user=streamer.exclude_user):
+            print('    ... replies are not okay.')
+
+            return
+
+        print('    ... replies are okay!')
+
+        if callable(streamer.callback):
+            print('    ... running Python callback ...')
+
+            streamer.callback(
+                account=account,
+                client=streamer.client,
+                media_url=media_url,
+                notif_type=notif_type,
+                orig_status=orig_status,
+                status=status,
+            )
+
+        else:
+            if media_url:
+                print('    ... downloading {}'.format(media_url))
+                media_filename = download_media(media_url)
+
+            else:
+                print('    ... no media URL.')
+                media_filename = None
+
+            command = streamer.callback.format(
+                filename=media_filename,
+                config=streamer.config,
+                user=account.get('acct'),
+                id=orig_status.get('id', '') if orig_status else '',
+                visibility=status.get('visibility', 'public') if status else 'direct',
+                sensitive='--sensitive' if status and status.get('sensitive') else '',
+            )
+
+            print('    ... running command:')
+            print('')
+            print(command)
+            print('')
+
+            subprocess.call(command, shell=True)
+
+            if media_filename:
+                os.remove(media_filename)
+
+        print('        ... done.')
+
+    except Exception as e:
+        print(str(e))
+
+
 class Streamer(StreamListener):
     def __init__(self, config, client, callback, exclude_user, **kwargs):
         print('Streamer is initializing...')
@@ -130,7 +194,8 @@ class Streamer(StreamListener):
 
         media_url = media_url_from_status(status, self.client)
 
-        return self._handle_reply(None, status, status, media_url, account)
+        return handle_reply(streamer=self, notif_type=None, status=status, orig_status=status,
+                            media_url=media_url, account=account)
 
     def on_notification(self, notif):
         account = notif.get('account', {})
@@ -163,66 +228,8 @@ class Streamer(StreamListener):
         elif notif_type == 'reblog':
             media_url = media_url_from_status(status, self.client)
 
-        return self._handle_reply(notif_type, status, orig_status, media_url, account)
-
-    def _handle_reply(self, notif_type, status, orig_status, media_url, account):
-        try:
-            if not are_bots_okay(account):
-                print('    ... bots are not okay for {user}'.format(user=account.get('acct')))
-
-                return
-
-            print('    ... bots are okay!')
-
-            if not are_replies_okay(status, account, self.client, exclude_user=self.exclude_user):
-                print('    ... replies are not okay.')
-
-                return
-
-            print('    ... replies are okay!')
-
-            if media_url:
-                print('    ... downloading {}'.format(media_url))
-
-            else:
-                print('    ... no media URL.')
-
-            media_filename = download_media(media_url) if media_url else None
-
-            if callable(self.callback):
-                self.callback(
-                    account=account,
-                    client=self.client,
-                    media_filename=media_filename,
-                    notif_type=notif_type,
-                    orig_status=orig_status,
-                    status=status,
-                )
-
-            else:
-                command = self.callback.format(
-                    filename=media_filename,
-                    config=self.config,
-                    user=account.get('acct'),
-                    id=orig_status.get('id', '') if orig_status else '',
-                    visibility=status.get('visibility', 'public') if status else 'direct',
-                    sensitive='--sensitive' if status and status.get('sensitive') else '',
-                )
-
-                print('    ... running command:')
-                print('')
-                print(command)
-                print('')
-
-                subprocess.call(command, shell=True)
-
-                print('        ... done.')
-
-        except Exception as e:
-            print(str(e))
-
-        if media_filename:
-            os.remove(media_filename)
+        return handle_reply(streamer=self, notif_type=notif_type, status=status, orig_status=orig_status,
+                            media_url=media_url, account=account)
 
     def on_abort(self, status_code, data):
         print(status_code)

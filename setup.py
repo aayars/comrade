@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='comrade',
-      version='0.1.0',
+      version='0.1.1',
       description='Comrade is good Mastodon bot. Салюд!',
       author='Alex Ayars',
       author_email='aayars@gmail.com',
@@ -16,7 +16,7 @@ setup(name='comrade',
         post-media=comrade.scripts.post_media:main
         stream-media=comrade.scripts.stream_media:main
         stream-toots=comrade.scripts.stream_toots:main
-        stream-toots-new=comrade.scripts.stream_toots_new:main
+        stream-offline=comrade.scripts.stream_offline:main
         ''',
 
       install_requires=[
