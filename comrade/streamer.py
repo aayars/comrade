@@ -1,14 +1,55 @@
 import html
+import json
 import mimetypes
 import os
 import random
 import re
+import shutil
 import subprocess
 import time
 
 from mastodon.streaming import StreamListener
 
 import requests
+
+COMRADE_CACHE = os.environ.get('COMRADE_CACHE', 'offline-cache')
+
+
+def cache_path(id):
+    return os.path.join(COMRADE_CACHE, '{}.json'.format(id))
+
+
+def get_status(id, client):
+    cached_path = cache_path(id)
+
+    if os.path.exists(cached_path):
+        with open(cached_path, 'r') as fh:
+            return json.load(fh)
+
+    status = client.status(id)
+
+    save_status(status)
+
+    time.sleep(.25)
+
+    return status
+
+
+def save_status(status):
+    cached_path = cache_path(status['id'])
+
+    if os.path.exists(cached_path):
+        return
+
+    if not os.path.exists(COMRADE_CACHE):
+        os.makedirs(COMRADE_CACHE)
+
+    temp = '{}-temp'.format(cached_path)
+
+    with open(temp, 'w') as fh:
+        fh.write(json.dumps(status, default=str))
+
+    shutil.move(temp, cached_path)
 
 
 def are_bots_okay(account):
@@ -20,7 +61,7 @@ def are_bots_okay(account):
     return '#nobot' not in account.get('note', '')
 
 
-def are_replies_okay(status, account, client, exclude_user=None, limit=25, sleep_time=2.5):
+def are_replies_okay(status, account, client, exclude_user=None, limit=25):
     """Return True if the discussion thread is still pretty short.
 
     :param dict status: A toot dict from the Mastodon.py API
@@ -28,7 +69,6 @@ def are_replies_okay(status, account, client, exclude_user=None, limit=25, sleep
     :param Mastodon client: A Mastodon client from the Mastodon.py API
     :param str|None exclude_user: Don't reply to this user (usually our own name)
     :param int limit: Discussion thread length limit
-    :param float sleep_time: How long to sleep between requests when traversing thread
     """
 
     if exclude_user and exclude_user == account.get('acct'):
@@ -47,9 +87,7 @@ def are_replies_okay(status, account, client, exclude_user=None, limit=25, sleep
         if not status.get('in_reply_to_id'):
             return True
 
-        status = client.status(status.get('in_reply_to_id'))
-
-        time.sleep(sleep_time)  # Don't rapid-fire client requests at this hapless instance
+        status = get_status(status.get('in_reply_to_id'), client)
 
     print('    ... too many responses in the thread already (limit: {})'.format(limit))
 
@@ -112,6 +150,9 @@ def strip_toot(content):
 
 def handle_reply(streamer=None, notif_type=None, status=None, orig_status=None, media_url=None, account=None):
     print('    ... Handling reply for status {}'.format(status.get('id')))
+
+    save_status(status)
+    save_status(orig_status)
 
     try:
         if not are_bots_okay(account):
@@ -213,7 +254,7 @@ class Streamer(StreamListener):
             media_url = media_url_from_status(status, self.client)
 
             if not media_url and status.get('in_reply_to_id'):
-                parent = self.client.status(status.get('in_reply_to_id'))
+                parent = get_status(status.get('in_reply_to_id'), self.client)
 
                 media_url = media_url_from_status(parent, self.client)
 

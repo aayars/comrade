@@ -9,15 +9,7 @@ import uuid
 
 from .streamer import handle_reply
 
-
-COMRADE_DATA = os.environ.get('COMRADE_DATA')
-
-if not COMRADE_DATA:
-    print('Set COMRADE_DATA in the environment, and run this program again. извиняюсь!')
-
-    import sys
-
-    sys.exit(2)
+COMRADE_DATA = os.environ.get('COMRADE_DATA', 'offline-data')
 
 
 def online_callback(client=None, **kwargs):
@@ -51,11 +43,10 @@ def online_callback(client=None, **kwargs):
 
 
 class OfflineStreamer():
-    def __init__(self, config, client, callback, exclude_user):
+    def __init__(self, config, client, callback):
         self.callback = callback
         self.config = config
         self.client = client
-        self.exclude_user = exclude_user
 
     def process(self):
         while True:

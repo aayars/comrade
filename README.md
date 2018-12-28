@@ -29,12 +29,12 @@ Comrade needs your connection info in a config file. Create a file named `config
 
 ```
 {
+  "mastodon_token": "Your Mastodon access token",
+  "mastodon_instance": "Base URL of your Mastodon instance, if not mastodon.social"
   "api_key": "(deprecated) Your Twitter API key",
   "api_secret": "(deprecated) Your Twitter API secret",
   "access_token": "(deprecated) Your Twitter access token",
   "access_secret": "(deprecated) Your Twitter access secret",
-  "mastodon_token": "Your Mastodon access token",
-  "mastodon_instance": "Base URL of your Mastodon instance, if not mastodon.social"
 }
 ```
 
@@ -50,7 +50,7 @@ Post images to Twitter and/or Mastodon (depending on what's in your config file)
 
 ### stream-toots
 
-Stream image toots from Mastodon, and handle them with a callback.
+Stream toots from Mastodon, and handle them with a callback.
 
 Several magic tokens are available to string callbacks. Include them in the command, and they will be swapped out for real values.
 
