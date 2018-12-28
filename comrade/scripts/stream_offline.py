@@ -28,7 +28,7 @@ def main(config, cache_dir, data_dir, callback, exclude_user):
             if callback:  # Callback for offline streamer was provided
                 from comrade.offline import OfflineStreamer
 
-                OfflineStreamer(config, client, callback).process()
+                OfflineStreamer(config, client, callback, exclude_user).process()
 
             else:  # Otherwise we're just a message sink
                 from comrade.streamer import Streamer

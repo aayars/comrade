@@ -43,10 +43,11 @@ def online_callback(client=None, **kwargs):
 
 
 class OfflineStreamer():
-    def __init__(self, config, client, callback):
+    def __init__(self, config, client, callback, exclude_user):
         self.callback = callback
         self.config = config
         self.client = client
+        self.exclude_user = exclude_user  # Needed for handle_reply
 
     def process(self):
         while True:
