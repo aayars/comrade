@@ -2,6 +2,7 @@
 
 import click
 import json
+import os
 import time
 
 from mastodon import Mastodon
