@@ -138,10 +138,10 @@ def strip_toot(content):
     :param str content:
     """
 
-    stripped = re.sub(r'<span.*?>.*</span>', '', content)
-    stripped = re.sub(r'<p>', '', stripped)
+    stripped = re.sub(r'<p>', '', content)
     stripped = re.sub(r'</p>', '\n\n', stripped)
     stripped = re.sub(r'<br.*?>', '\n', stripped)
+    stripped = re.sub(r'<.*?>', '', stripped)
 
     stripped = html.unescape(stripped)
 
