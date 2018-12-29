@@ -19,7 +19,7 @@ def online_callback(client=None, **kwargs):
 
     queued_count = len(os.listdir(COMRADE_DATA))
 
-    if queued_count:
+    if queued_count and kwargs.get('notif_type') != 'favourite':
         message = 'Hello, @{}!\n\n' \
             'You are around place {} in queue.\n\n' \
             'Stand by, your toot is important.'
