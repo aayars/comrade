@@ -237,22 +237,7 @@ def handle_reply(streamer=None, notif_type=None, status=None, orig_status=None, 
         print(str(e))
 
 
-class Streamer(StreamListener):
-    def __init__(self, config, client, callback, exclude_user, **kwargs):
-        print('Streamer is initializing...')
-
-        super(Streamer, self).__init__(**kwargs)
-
-        self.callback = callback
-        self.config = config
-        self.client = client
-        self.exclude_user = exclude_user
-
-        self.user_time = {}   # Map of username to last interaction time
-        self.user_count = {}  # Map of username to interaction counter
-
-        print('    ... ready!')
-
+class AbstractStreamer():
     def should_squelch_user(self, username):
         """ Limit interactions to some number per minute """
 
@@ -268,6 +253,19 @@ class Streamer(StreamListener):
         self.user_count[username] += 1
 
         return self.user_count[username] >= SQUELCH_THRESHOLD
+
+
+class Streamer(AbstractStreamer, StreamListener):
+    def __init__(self, config, client, callback, exclude_user, **kwargs):
+        super(Streamer, self).__init__(**kwargs)
+
+        self.callback = callback
+        self.config = config
+        self.client = client
+        self.exclude_user = exclude_user
+
+        self.user_time = {}   # Map of username to last interaction time
+        self.user_count = {}  # Map of username to interaction counter
 
     def on_update(self, status):
         account = status.get('account', {})
