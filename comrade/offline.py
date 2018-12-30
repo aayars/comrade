@@ -51,7 +51,7 @@ class OfflineStreamer():
 
     def process(self):
         while True:
-            for filename in os.listdir(COMRADE_DATA):
+            for filename in sorted(os.listdir(COMRADE_DATA)):
                 if not filename.endswith('.json'):
                     continue
 
