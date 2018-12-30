@@ -14,6 +14,10 @@ import requests
 
 COMRADE_CACHE = os.environ.get('COMRADE_CACHE', 'offline-cache')
 
+SQUELCH_THRESHOLD = 4
+
+SILENCE_THRESHOLD = 8
+
 
 def cache_path(id):
     return os.path.join(COMRADE_CACHE, '{}.json'.format(id))
@@ -154,9 +158,11 @@ def handle_reply(streamer=None, notif_type=None, status=None, orig_status=None, 
     save_status(status)
     save_status(orig_status)
 
+    username = account.get('acct')
+
     try:
         if not are_bots_okay(account):
-            print('    ... bots are not okay for {user}'.format(user=account.get('acct')))
+            print('    ... bots are not okay for {user}'.format(user=username))
 
             return
 
@@ -166,6 +172,22 @@ def handle_reply(streamer=None, notif_type=None, status=None, orig_status=None, 
             print('    ... replies are not okay.')
 
             return
+
+        if streamer.should_squelch_user(username):
+            count = streamer.user_count[username]
+
+            if count >= SILENCE_THRESHOLD:
+                print('    ... silencing {} (response count: {})'.format(username, count))
+
+                return
+
+            print('    ... squelching reply to {} (response count: {})'.format(username, count))
+
+            if status:
+                status['visibility'] = 'direct'
+
+            if orig_status:
+                orig_status['visibility'] = 'direct'
 
         print('    ... replies are okay!')
 
@@ -193,7 +215,7 @@ def handle_reply(streamer=None, notif_type=None, status=None, orig_status=None, 
             command = streamer.callback.format(
                 filename=media_filename,
                 config=streamer.config,
-                user=account.get('acct'),
+                user=username,
                 id=orig_status.get('id', '') if orig_status else '',
                 visibility=status.get('visibility', 'public') if status else 'direct',
                 sensitive='--sensitive' if status and status.get('sensitive') else '',
@@ -226,7 +248,26 @@ class Streamer(StreamListener):
         self.client = client
         self.exclude_user = exclude_user
 
+        self.user_time = {}   # Map of username to last interaction time
+        self.user_count = {}  # Map of username to interaction counter
+
         print('    ... ready!')
+
+    def should_squelch_user(self, username):
+        """ Limit interactions to some number per minute """
+
+        if username in self.user_count:
+            minutes_since_last_interaction = int((time.time() - self.user_time[username]) / 60)
+
+            self.user_count[username] = max(0, self.user_count[username] - minutes_since_last_interaction)
+
+        else:
+            self.user_count[username] = 0
+
+        self.user_time[username] = time.time()
+        self.user_count[username] += 1
+
+        return self.user_count[username] >= SQUELCH_THRESHOLD
 
     def on_update(self, status):
         account = status.get('account', {})
