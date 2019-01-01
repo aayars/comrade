@@ -76,24 +76,16 @@ def are_replies_okay(status, account, client, exclude_user=None, limit=25):
     """
 
     if exclude_user and exclude_user == account.get('acct'):
-        print('    ... excluding user {}'.format(exclude_user))
-
         return False
-
-    print('    ... checking length of discussion thread')
 
     for i in range(limit):
         if i in (0, 1) and not are_bots_okay(account):  # Check orig post and parent for #nobot
-            print('    ... bots not are okay for {}'.format(account.get('acct')))
-
             return False
 
         if not status.get('in_reply_to_id'):
             return True
 
         status = get_status(status.get('in_reply_to_id'), client)
-
-    print('    ... too many responses in the thread already (limit: {})'.format(limit))
 
     return False
 
@@ -152,94 +144,20 @@ def strip_toot(content):
     return stripped
 
 
-def handle_reply(streamer=None, notif_type=None, status=None, orig_status=None, media_url=None, account=None):
-    print('    ... Handling reply for status {}'.format(status.get('id')))
-
-    save_status(status)
-    save_status(orig_status)
-
-    username = account.get('acct')
-
-    try:
-        if not are_bots_okay(account):
-            print('    ... bots are not okay for {user}'.format(user=username))
-
-            return
-
-        print('    ... bots are okay!')
-
-        if not are_replies_okay(status, account, streamer.client, exclude_user=streamer.exclude_user):
-            print('    ... replies are not okay.')
-
-            return
-
-        if streamer.should_squelch_user(username):
-            count = streamer.user_count[username]
-
-            if count >= SILENCE_THRESHOLD:
-                print('    ... silencing {} (response count: {})'.format(username, count))
-
-                return
-
-            print('    ... squelching reply to {} (response count: {})'.format(username, count))
-
-            if status:
-                status['visibility'] = 'direct'
-
-            if orig_status:
-                orig_status['visibility'] = 'direct'
-
-        print('    ... replies are okay!')
-
-        if callable(streamer.callback):
-            print('    ... running Python callback ...')
-
-            streamer.callback(
-                account=account,
-                client=streamer.client,
-                media_url=media_url,
-                notif_type=notif_type,
-                orig_status=orig_status,
-                status=status,
-            )
-
-        else:
-            if media_url:
-                print('    ... downloading {}'.format(media_url))
-                media_filename = download_media(media_url)
-
-            else:
-                print('    ... no media URL.')
-                media_filename = None
-
-            command = streamer.callback.format(
-                filename=media_filename,
-                config=streamer.config,
-                user=username,
-                id=orig_status.get('id', '') if orig_status else '',
-                visibility=status.get('visibility', 'public') if status else 'direct',
-                sensitive='--sensitive' if status and status.get('sensitive') else '',
-            )
-
-            print('    ... running command:')
-            print('')
-            print(command)
-            print('')
-
-            subprocess.call(command, shell=True)
-
-            if media_filename:
-                os.remove(media_filename)
-
-        print('        ... done.')
-
-    except Exception as e:
-        print(str(e))
-
-
 class AbstractStreamer():
+    def _setup_vars(self, config, client, callback, exclude_user):
+        """Call me from __init__"""
+
+        self.callback = callback
+        self.config = config
+        self.client = client
+        self.exclude_user = exclude_user  # Needed for handle_reply
+
+        self.user_time = {}   # Map of username to last interaction time
+        self.user_count = {}  # Map of username to interaction counter
+
     def should_squelch_user(self, username):
-        """ Limit interactions to some number per minute """
+        """Limit interactions to some number per minute"""
 
         if username in self.user_count:
             minutes_since_last_interaction = int((time.time() - self.user_time[username]) / 60)
@@ -254,33 +172,80 @@ class AbstractStreamer():
 
         return self.user_count[username] >= SQUELCH_THRESHOLD
 
+    def handle_reply(self, notif_type=None, status=None, orig_status=None, media_url=None, account=None):
+        save_status(status)
+        save_status(orig_status)
+
+        username = account.get('acct')
+
+        print('Received {} from {}'.format(notif_type or 'update', username))
+
+        try:
+            if not are_replies_okay(status, account, self.client, exclude_user=self.exclude_user):
+                return
+
+            if self.should_squelch_user(username):
+                count = self.user_count[username]
+
+                if count >= SILENCE_THRESHOLD:
+                    return
+
+                if status:
+                    status['visibility'] = 'direct'
+
+                if orig_status:
+                    orig_status['visibility'] = 'direct'
+
+            if callable(self.callback):
+                self.callback(
+                    account=account,
+                    client=self.client,
+                    media_url=media_url,
+                    notif_type=notif_type,
+                    orig_status=orig_status,
+                    status=status,
+                )
+
+            else:
+                if media_url:
+                    media_filename = download_media(media_url)
+
+                else:
+                    media_filename = None
+
+                command = self.callback.format(
+                    filename=media_filename,
+                    config=self.config,
+                    user=username,
+                    id=orig_status.get('id', '') if orig_status else '',
+                    visibility=status.get('visibility', 'public') if status else 'direct',
+                    sensitive='--sensitive' if status and status.get('sensitive') else '',
+                )
+
+                subprocess.call(command, shell=True)
+
+                if media_filename:
+                    os.remove(media_filename)
+
+        except Exception as e:
+            print(str(e))
+
 
 class Streamer(AbstractStreamer, StreamListener):
-    def __init__(self, config, client, callback, exclude_user, **kwargs):
+    def __init__(self, *args, **kwargs):
+        self._setup_vars(*args)
+
         super(Streamer, self).__init__(**kwargs)
-
-        self.callback = callback
-        self.config = config
-        self.client = client
-        self.exclude_user = exclude_user
-
-        self.user_time = {}   # Map of username to last interaction time
-        self.user_count = {}  # Map of username to interaction counter
 
     def on_update(self, status):
         account = status.get('account', {})
 
-        print('Got a status update from {}'.format(account.get('acct')))
-
         media_url = media_url_from_status(status, self.client)
 
-        return handle_reply(streamer=self, notif_type=None, status=status, orig_status=status,
-                            media_url=media_url, account=account)
+        return self.handle_reply(notif_type=None, status=status, orig_status=status, media_url=media_url, account=account)
 
     def on_notification(self, notif):
         account = notif.get('account', {})
-
-        print('Got a {kind} from {account}'.format(kind=notif.get('type'), account=account.get('acct')))
 
         status = notif.get('status', {})
         orig_status = status
@@ -295,11 +260,10 @@ class Streamer(AbstractStreamer, StreamListener):
             if not media_url and status.get('in_reply_to_id'):
                 parent = get_status(status.get('in_reply_to_id'), self.client)
 
+                # if this mention doesn't have an image, check parent
                 media_url = media_url_from_status(parent, self.client)
 
                 if media_url:
-                    print('    ... using parent toot\'s image and privacy settings')
-
                     status = parent
 
         elif notif_type == 'follow':
@@ -308,8 +272,7 @@ class Streamer(AbstractStreamer, StreamListener):
         elif notif_type == 'reblog':
             media_url = media_url_from_status(status, self.client)
 
-        return handle_reply(streamer=self, notif_type=notif_type, status=status, orig_status=orig_status,
-                            media_url=media_url, account=account)
+        return self.handle_reply(notif_type=notif_type, status=status, orig_status=orig_status, media_url=media_url, account=account)
 
     def on_abort(self, status_code, data):
         print(status_code)

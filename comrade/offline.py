@@ -7,7 +7,7 @@ import tempfile
 import time
 import uuid
 
-from .streamer import AbstractStreamer, handle_reply
+from .streamer import AbstractStreamer
 
 
 COMRADE_DATA = os.environ.get('COMRADE_DATA', 'offline-data')
@@ -44,14 +44,8 @@ def online_callback(client=None, **kwargs):
 
 
 class OfflineStreamer(AbstractStreamer):
-    def __init__(self, config, client, callback, exclude_user):
-        self.callback = callback
-        self.config = config
-        self.client = client
-        self.exclude_user = exclude_user  # Needed for handle_reply
-
-        self.user_time = {}   # Map of username to last interaction time
-        self.user_count = {}  # Map of username to interaction counter
+    def __init__(self, *args):
+        self._setup_vars(*args)
 
     def process(self):
         while True:
@@ -81,7 +75,7 @@ class OfflineStreamer(AbstractStreamer):
                             except Exception:
                                 pass
 
-                        handle_reply(streamer=self, **comrade_status)
+                        self.handle_reply(**comrade_status)
 
                 except Exception as e:
                     print("Couldn't process {}: {}".format(filename, str(e)))
