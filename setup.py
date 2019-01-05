@@ -14,7 +14,6 @@ setup(name='comrade',
       entry_points='''
         [console_scripts]
         post-media=comrade.scripts.post_media:main
-        stream-media=comrade.scripts.stream_media:main
         stream-toots=comrade.scripts.stream_toots:main
         stream-offline=comrade.scripts.stream_offline:main
         ''',

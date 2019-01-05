@@ -76,14 +76,6 @@ stream-toots --config configs/mastodon.json --callback "$callback_command" --exc
 ```
 
 
-### stream-media
-
-Stream image tweets from Twitter, and handle them with a callback.
-
-```
-stream-media --config configs/twitter.json --track @your-user --callback "$callback_command" --exclude-user your-user
-```
-
 ## Docker
 
 If running via [Docker](https://hub.docker.com/r/aayars/comrade/), mount the config file with the `-v` argument to `docker run`.
