@@ -10,50 +10,58 @@ import uuid
 from .streamer import AbstractStreamer
 
 
-COMRADE_DATA = os.environ.get('COMRADE_DATA', 'offline-data')
+def get_online_callback(data_dir):
+    def online_callback(client=None, **kwargs):
+        """Take a toot from an online source, and store it for offline processing. See stream_offline.py"""
 
+        print("    ... Saving offline message")
 
-def online_callback(client=None, **kwargs):
-    """Take a toot from an online source, and store it for offline processing. See stream_offline.py"""
+        queue_dir = os.path.join(data_dir, 'queue')
 
-    print("    ... Saving offline message")
+        queued_count = len(os.listdir(queue_dir))
 
-    queued_count = len(os.listdir(COMRADE_DATA))
+        if queued_count and kwargs.get('notif_type') == 'mention':
+            message = 'Hello, @{}!\n\n' \
+                'You are around place {} in queue.\n\n' \
+                'Stand by, your toot is important.'
 
-    if queued_count and kwargs.get('notif_type') == 'mention':
-        message = 'Hello, @{}!\n\n' \
-            'You are around place {} in queue.\n\n' \
-            'Stand by, your toot is important.'
-            
-        message = message.format(kwargs['account'].get('acct'), queued_count + 1)
+            message = message.format(kwargs['account'].get('acct'), queued_count + 1)
 
-        in_reply_to_id = kwargs.get('orig_status', {}).get('id')
+            in_reply_to_id = kwargs.get('orig_status', {}).get('id')
 
-        status = client.status_post(message, in_reply_to_id=in_reply_to_id, visibility='direct')
+            status = client.status_post(message, in_reply_to_id=in_reply_to_id, visibility='direct')
 
-        kwargs['placeholder_id'] = status.get('id')
+            kwargs['placeholder_id'] = status.get('id')
 
-    temp_path = os.path.join(COMRADE_DATA, '{}-{}.json'.format(int(time.time()), uuid.uuid4()))
+        temp_path = os.path.join(queue_dir, '{}-{}.json'.format(int(time.time()), uuid.uuid4()))
 
-    with open(temp_path + '-temp', 'w') as fh:
-        fh.write(json.dumps(kwargs, default=str))
+        with open(temp_path + '-temp', 'w') as fh:
+            fh.write(json.dumps(kwargs, default=str))
 
-    shutil.move(temp_path + '-temp', temp_path)
+        shutil.move(temp_path + '-temp', temp_path)
 
-    print('    ... Saved offline message!')
+        print('    ... Saved offline message!')
+
+    return online_callback
 
 
 class OfflineStreamer(AbstractStreamer):
-    def __init__(self, *args):
-        self._setup_vars(*args)
+    def __init__(self, *args, **kwargs):
+        self._setup_vars(*args, **kwargs)
+
+        self.queue_dir = os.path.join(self.data_dir, 'queue')
+
+        if not os.path.exists(self.queue_dir):
+            os.makedirs(self.queue_dir)
+
 
     def process(self):
         while True:
-            for filename in sorted(os.listdir(COMRADE_DATA)):
+            for filename in sorted(os.listdir(self.queue_dir)):
                 if not filename.endswith('.json'):
                     continue
 
-                full_path = os.path.join(COMRADE_DATA, filename)
+                full_path = os.path.join(self.queue_dir, filename)
 
                 try:
                     with tempfile.TemporaryDirectory() as tempdir:

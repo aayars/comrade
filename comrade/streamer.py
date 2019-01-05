@@ -13,15 +13,9 @@ from mastodon.streaming import StreamListener
 
 import requests
 
-COMRADE_CACHE = os.environ.get('COMRADE_CACHE', 'offline-cache')
-
 SQUELCH_THRESHOLD = 4
 
 SILENCE_THRESHOLD = 8
-
-
-def cache_path(id):
-    return os.path.join(COMRADE_CACHE, '{}.json'.format(id))
 
 
 def are_bots_okay(account):
@@ -88,7 +82,7 @@ def strip_toot(content):
 
 
 class AbstractStreamer():
-    def _setup_vars(self, config, client, callback, exclude_user):
+    def _setup_vars(self, config, client, callback, exclude_user, data_dir):
         """Call me from __init__"""
 
         self.callback = callback
@@ -99,7 +93,8 @@ class AbstractStreamer():
         self.user_time = {}   # Map of username to last interaction time
         self.user_count = {}  # Map of username to interaction counter
 
-        self.cache = Cache(os.environ.get('COMRADE_CACHE'))
+        self.data_dir = data_dir
+        self.cache = Cache(os.path.join(data_dir, 'cache'))
 
     def should_squelch_user(self, username):
         """Limit interactions to some number per minute"""
@@ -224,9 +219,9 @@ class AbstractStreamer():
 
 class Streamer(AbstractStreamer, StreamListener):
     def __init__(self, *args, **kwargs):
-        self._setup_vars(*args)
+        self._setup_vars(*args, **kwargs)
 
-        super(Streamer, self).__init__(**kwargs)
+        super(Streamer, self).__init__()
 
     def on_update(self, status):
         account = status.get('account', {})

@@ -7,13 +7,15 @@ import time
 
 from mastodon import Mastodon
 
+from comrade.streamer import Streamer
+
 
 @click.command()
 @click.option("--config", type=click.Path(dir_okay=False), required=True)
 @click.option("--callback", type=str, required=True)
-@click.option("--cache-dir", type=click.Path(), required=True, help="Status cache dir")
+@click.option("--data-dir", type=click.Path(), required=True)
 @click.option("--exclude-user", type=str)
-def main(config, callback, cache_dir, exclude_user=None):
+def main(config, callback, data_dir, exclude_user=None):
     cfg = json.load(open(config))
 
     while(True):
@@ -23,11 +25,15 @@ def main(config, callback, cache_dir, exclude_user=None):
                 api_base_url = cfg["mastodon_instance"],
             )
 
-            os.environ['COMRADE_CACHE'] = cache_dir
+            streamer = Streamer(
+                config=config,
+                client=client,
+                callback=callback,
+                exclude_user=exclude_user,
+                data_dir=data_dir
+            )
 
-            from comrade.streamer import Streamer
-
-            client.stream_user(Streamer(config, client, callback, exclude_user))
+            client.stream_user(streamer)
 
         except Exception as e:
             print(str(e))
