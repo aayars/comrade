@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import time
 
+from diskcache import Cache
 from mastodon.streaming import StreamListener
 
 import requests
@@ -23,39 +24,6 @@ def cache_path(id):
     return os.path.join(COMRADE_CACHE, '{}.json'.format(id))
 
 
-def get_status(id, client):
-    cached_path = cache_path(id)
-
-    if os.path.exists(cached_path):
-        with open(cached_path, 'r') as fh:
-            return json.load(fh)
-
-    status = client.status(id)
-
-    save_status(status)
-
-    time.sleep(.25)
-
-    return status
-
-
-def save_status(status):
-    cached_path = cache_path(status['id'])
-
-    if os.path.exists(cached_path):
-        return
-
-    if not os.path.exists(COMRADE_CACHE):
-        os.makedirs(COMRADE_CACHE)
-
-    temp = '{}-temp'.format(cached_path)
-
-    with open(temp, 'w') as fh:
-        fh.write(json.dumps(status, default=str))
-
-    shutil.move(temp, cached_path)
-
-
 def are_bots_okay(account):
     """Return True unless this user's profile contains #nobot
 
@@ -63,31 +31,6 @@ def are_bots_okay(account):
     """
 
     return '#nobot' not in account.get('note', '')
-
-
-def are_replies_okay(status, account, client, exclude_user=None, limit=25):
-    """Return True if the discussion thread is still pretty short.
-
-    :param dict status: A toot dict from the Mastodon.py API
-    :param dict account: A user dict from the Mastodon.py API
-    :param Mastodon client: A Mastodon client from the Mastodon.py API
-    :param str|None exclude_user: Don't reply to this user (usually our own name)
-    :param int limit: Discussion thread length limit
-    """
-
-    if exclude_user and exclude_user == account.get('acct'):
-        return False
-
-    for i in range(limit):
-        if i in (0, 1) and not are_bots_okay(account):  # Check orig post and parent for #nobot
-            return False
-
-        if not status.get('in_reply_to_id'):
-            return True
-
-        status = get_status(status.get('in_reply_to_id'), client)
-
-    return False
 
 
 def media_url_from_status(status, client):
@@ -156,6 +99,8 @@ class AbstractStreamer():
         self.user_time = {}   # Map of username to last interaction time
         self.user_count = {}  # Map of username to interaction counter
 
+        self.cache = Cache(os.environ.get('COMRADE_CACHE'))
+
     def should_squelch_user(self, username):
         """Limit interactions to some number per minute"""
 
@@ -173,15 +118,18 @@ class AbstractStreamer():
         return self.user_count[username] >= SQUELCH_THRESHOLD
 
     def handle_reply(self, notif_type=None, status=None, orig_status=None, media_url=None, account=None):
-        save_status(status)
-        save_status(orig_status)
+        if status:
+            self.set_status(status.get('id'), status)
+
+        if orig_status:
+            self.set_status(orig_status.get('id'), orig_status)
 
         username = account.get('acct')
 
         print('Received {} from {}'.format(notif_type or 'update', username))
 
         try:
-            if not are_replies_okay(status, account, self.client, exclude_user=self.exclude_user):
+            if not self.are_replies_okay(status, account):
                 return
 
             if self.should_squelch_user(username):
@@ -230,6 +178,49 @@ class AbstractStreamer():
         except Exception as e:
             print(str(e))
 
+    def get_status(self, id):
+        """Get a status entry from the cache, falling back to the client."""
+
+        status = self.cache.get(id)
+
+        if status:
+            return json.loads(status)
+
+        status = self.client.status(id)
+
+        self.set_status(id, status)
+
+        return status
+
+    def set_status(self, id, status):
+        """Cache a status entry."""
+
+        self.cache.set(id, json.dumps(status, default=str))
+
+    def are_replies_okay(self, status, account, limit=25):
+        """Return True if the discussion thread is still pretty short.
+
+        :param dict status: A toot dict from the Mastodon.py API
+        :param dict account: A user dict from the Mastodon.py API
+        :param Mastodon client: A Mastodon client from the Mastodon.py API
+        :param str|None exclude_user: Don't reply to this user (usually our own name)
+        :param int limit: Discussion thread length limit
+        """
+
+        if self.exclude_user and self.exclude_user == account.get('acct'):
+            return False
+
+        for i in range(limit):
+            if i in (0, 1) and not are_bots_okay(account):  # Check orig post and parent for #nobot
+                return False
+
+            if not status.get('in_reply_to_id'):
+                return True
+
+            status = self.get_status(status.get('in_reply_to_id'))
+
+        return False
+
 
 class Streamer(AbstractStreamer, StreamListener):
     def __init__(self, *args, **kwargs):
@@ -258,7 +249,7 @@ class Streamer(AbstractStreamer, StreamListener):
             media_url = media_url_from_status(status, self.client)
 
             if not media_url and status.get('in_reply_to_id'):
-                parent = get_status(status.get('in_reply_to_id'), self.client)
+                parent = self.get_status(status.get('in_reply_to_id'))
 
                 # if this mention doesn't have an image, check parent
                 media_url = media_url_from_status(parent, self.client)
