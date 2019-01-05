@@ -72,7 +72,7 @@ set -ex
 
 callback_command="your-image-script \"{filename}\" && post-media --config {config} --image your-output.jpg --status \"@{user}\" --in-reply-to \"{id}\" --visibility \"{visibility}\" {sensitive}"
 
-stream-toots --config configs/config.json --callback "$callback_command" --exclude-user your-user
+stream-toots --config configs/mastodon.json --callback "$callback_command" --exclude-user your-user
 ```
 
 
@@ -80,8 +80,9 @@ stream-toots --config configs/config.json --callback "$callback_command" --exclu
 
 Stream image tweets from Twitter, and handle them with a callback.
 
-Usage is the same as stream-toots.
-
+```
+stream-media --config configs/twitter.json --track @your-user --callback "$callback_command" --exclude-user your-user
+```
 
 ## Docker
 
