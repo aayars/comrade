@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='comrade',
-      version='0.2.0',
+      version='0.3.0',
       description='Comrade is good Mastodon bot. Салюд!',
       author='Alex Ayars',
       author_email='aayars@gmail.com',
@@ -16,6 +16,7 @@ setup(name='comrade',
         post-media=comrade.scripts.post_media:main
         stream-toots=comrade.scripts.stream_toots:main
         stream-offline=comrade.scripts.stream_offline:main
+        stream-archived=comrade.scripts.stream_archived:main
         ''',
 
       install_requires=[
@@ -23,5 +24,6 @@ setup(name='comrade',
         "diskcache==3.1.1",
         "twython==3.6.0",
         "Mastodon.py==1.3.1",
+        "SQLAlchemy==1.2.16",
         ]
       )

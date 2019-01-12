@@ -4,12 +4,13 @@ import mimetypes
 import os
 import random
 import re
-import shutil
 import subprocess
 import time
 
 from diskcache import Cache
 from mastodon.streaming import StreamListener
+
+from .model import Toot
 
 import requests
 
@@ -27,11 +28,10 @@ def are_bots_okay(account):
     return '#nobot' not in account.get('note', '')
 
 
-def media_url_from_status(status, client):
+def media_url_from_status(status):
     """Check the given status (or its parent) for a media attachment, and return the url or None.
 
     :param dict status: A toot dict from the Mastodon.py API
-    :param Mastodon client: A Mastodon client from the Mastodon.py API
     """
 
     media = status.get('media_attachments', [])
@@ -81,6 +81,31 @@ def strip_toot(content):
     return stripped
 
 
+def toot_from_status(status):
+    """Turn a Mastodon.py Toot Dict into a Toot.
+
+    :param dict status:
+    """
+
+    if not status:
+        return None
+
+    toot = Toot()
+
+    toot.account_id = status.get('account', {}).get('id')
+    toot.account_name = status.get('account', {}).get('acct')
+    toot.media_url = media_url_from_status(status)
+    toot.reblog_id = status['reblog']['id'] if status.get('reblog') else None
+
+    for key, value in status.items():
+        if not hasattr(toot, key):
+            continue
+
+        setattr(toot, key, value)
+
+    return toot
+
+
 class AbstractStreamer():
     def _setup_vars(self, config, client, callback, exclude_user, data_dir):
         """Call me from __init__"""
@@ -119,12 +144,16 @@ class AbstractStreamer():
         if orig_status:
             self.set_status(orig_status.get('id'), orig_status)
 
-        username = account.get('acct')
+        if isinstance(account, str):
+            username = account
+
+        else:
+            username = account.get('acct')
 
         print('Received {} from {}'.format(notif_type or 'update', username))
 
         try:
-            if not self.are_replies_okay(status, account):
+            if isinstance(account, dict) and not self.are_replies_okay(status, account):
                 return
 
             if self.should_squelch_user(username):
@@ -151,6 +180,8 @@ class AbstractStreamer():
 
             else:
                 if media_url:
+                    print("    ... Downloading media {}".format(media_url))
+
                     media_filename = download_media(media_url)
 
                 else:
@@ -216,6 +247,17 @@ class AbstractStreamer():
 
         return False
 
+    def process(self, timeline='user'):
+        """
+        """
+
+        if timeline == 'local':
+            self.client.stream_local(self)
+        elif timeline == 'public':
+            self.client.stream_public(self)
+        else:
+            self.client.stream_user(self)
+
 
 class Streamer(AbstractStreamer, StreamListener):
     def __init__(self, *args, **kwargs):
@@ -226,7 +268,7 @@ class Streamer(AbstractStreamer, StreamListener):
     def on_update(self, status):
         account = status.get('account', {})
 
-        media_url = media_url_from_status(status, self.client)
+        media_url = media_url_from_status(status)
 
         return self.handle_reply(notif_type=None, status=status, orig_status=status, media_url=media_url, account=account)
 
@@ -241,13 +283,13 @@ class Streamer(AbstractStreamer, StreamListener):
         notif_type = notif.get('type')
 
         if notif_type == 'mention':
-            media_url = media_url_from_status(status, self.client)
+            media_url = media_url_from_status(status)
 
             if not media_url and status.get('in_reply_to_id'):
                 parent = self.get_status(status.get('in_reply_to_id'))
 
                 # if this mention doesn't have an image, check parent
-                media_url = media_url_from_status(parent, self.client)
+                media_url = media_url_from_status(parent)
 
                 if media_url:
                     status = parent
@@ -256,7 +298,7 @@ class Streamer(AbstractStreamer, StreamListener):
             media_url = account.get('avatar_static')
 
         elif notif_type == 'reblog':
-            media_url = media_url_from_status(status, self.client)
+            media_url = media_url_from_status(status)
 
         return self.handle_reply(notif_type=notif_type, status=status, orig_status=orig_status, media_url=media_url, account=account)
 

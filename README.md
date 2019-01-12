@@ -50,7 +50,22 @@ Post images to Twitter and/or Mastodon (depending on what's in your config file)
 
 ### stream-toots
 
-Stream toots from Mastodon, and handle them with a callback.
+Stream toots, and handle them with a callback.
+
+
+### stream-offline
+
+Work with offline (queued) toots.
+
+
+### stream-archived
+
+Work with archived (historical) toots.
+
+
+### String Callbacks
+
+Callbacks may be a string containing a command to execute.
 
 Several magic tokens are available to string callbacks. Include them in the command, and they will be swapped out for real values.
 
@@ -74,6 +89,43 @@ callback_command="your-image-script \"{filename}\" && post-media --config {confi
 
 stream-toots --config configs/mastodon.json --callback "$callback_command" --exclude-user your-user
 ```
+
+
+### Python Callbacks
+
+The API is unofficial and unstable.
+
+A Python function may be used instead of a string callback. Python callbacks receive the following parameters:
+
+- `account`: A Mastodon.py User Dict of the user initiating this callback
+- `client`: A Mastodon client
+- `media_url`: The media attachment URL, if any. (First one only)
+- `notif_type`: The type of notification. 'update', 'mention', 'reblog', 'follow' or 'favourite'
+- `status`: The Mastodon.py Toot Dict which is the subject of this callback
+- `orig_status`: The Mastodon.py Toot Dict which initiated this callback
+
+```
+def callback(account, client, media_url, notif_type, status, orig_status):
+    print('here i am with status id {}'.format(status.get('id')))
+
+    ...
+
+###
+
+streamer = Streamer(callback=callback, ...)
+
+streamer.process(...)
+```
+
+
+#### Streaming Models
+
+There are several streamer types.
+
+- `Streamer`: Stream live toots directly from a server
+- `OfflineStreamer`: Stream patiently waiting locally queued toots
+- `ArchiveSink`: Stream historical toots from a server
+- `ArchiveSource`: Stream historical toots from a local archive
 
 
 ## Docker

@@ -5,6 +5,7 @@ import mimetypes
 from mastodon import Mastodon
 from twython import Twython
 
+
 @click.command()
 @click.option("--config", type=click.Path(dir_okay=False), required=True)
 @click.option("--image", type=click.Path(dir_okay=False), required=False)
@@ -29,15 +30,15 @@ def main(config, image, status, in_reply_to=None, sensitive=False, visibility="p
 
             client.update_status(status=status, media_ids=media_ids, in_reply_to_status_id=in_reply_to, possibly_sensitive=sensitive)
 
-        except Exception as e:
+        except Exception:
             # ¯\_(ツ)_/¯
             pass
 
     if config.get("mastodon_token"):
         try:
             mastodon = Mastodon(
-                access_token = config["mastodon_token"],
-                api_base_url = config["mastodon_instance"],
+                access_token=config["mastodon_token"],
+                api_base_url=config["mastodon_instance"],
             )
 
             if image:
@@ -49,5 +50,5 @@ def main(config, image, status, in_reply_to=None, sensitive=False, visibility="p
 
             mastodon.status_post(status, in_reply_to_id=in_reply_to, media_ids=media_ids, sensitive=sensitive, visibility=visibility)
 
-        except Exception as e:
+        except Exception:
             pass
