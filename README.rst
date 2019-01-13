@@ -1,5 +1,5 @@
-Noisemaker
-==========
+Comrade
+=======
 
 Stream and post toots with a simple callback-driven interface.
 
