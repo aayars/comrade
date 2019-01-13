@@ -9,6 +9,8 @@ from .streamer import AbstractStreamer, media_url_from_status
 
 
 class AbstractArchiveStreamer(AbstractStreamer):
+    """Abstract class for archive streamers. Don't use directly."""
+
     def __init__(self, *args, **kwargs):
         self._setup_vars(*args, **kwargs)
 
@@ -29,7 +31,7 @@ class AbstractArchiveStreamer(AbstractStreamer):
 
 
 class ArchiveSink(AbstractArchiveStreamer):
-    """Archive historical toots"""
+    """Process historical toots from a server"""
 
     def are_replies_okay(self, *args):
         return True
@@ -53,11 +55,12 @@ class ArchiveSink(AbstractArchiveStreamer):
 
 
 class ArchiveSource(AbstractArchiveStreamer):
-    """Process archived toots"""
+    """Process historical toots from a local archive"""
 
     def __init__(self, *args, **kwargs):
         self._setup_vars(*args, **kwargs)
 
+    # Archive is created via callback in stream_archive.py
     def process(self):
         """TODO: Filter by columns!"""
 

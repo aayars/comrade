@@ -10,6 +10,8 @@ from .streamer import AbstractStreamer
 
 
 class OfflineStreamer(AbstractStreamer):
+    """Stream recent toots from a local queue."""
+
     def __init__(self, *args, **kwargs):
         self._setup_vars(*args, **kwargs)
 
@@ -18,6 +20,7 @@ class OfflineStreamer(AbstractStreamer):
         if not os.path.exists(self.queue_dir):
             os.makedirs(self.queue_dir)
 
+    # Queue is populated with stream_offline.py
     def process(self):
         while True:
             for filename in sorted(os.listdir(self.queue_dir)):
