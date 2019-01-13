@@ -34,12 +34,34 @@ Installing and Upgrading
 
 .. code-block:: bash
 
-    /usr/bin/python3 -m venv venv
+    python3 -m venv comrade
 
-    source venv/bin/activate
+    source comrade/bin/activate
 
     pip install --upgrade git+https://github.com/aayars/comrade
 
+For subsequent activation of the virtual environment, run `source bin/activate` while in the `comrade` directory. To deactivate, run `deactivate`.
+
+
+Development
+~~~~~~~~~~~
+
+To install Comrade in a dev env:
+
+.. code-block:: bash
+
+    git clone https://github.com/aayars/comrade
+
+    cd comrade
+
+    python3 -m venv venv
+
+    source venv/bin/activate
+
+    python setup.py develop
+    python setup.py install_scripts
+
+For subsequent activation of the virtual environment, run `source venv/bin/activate` while in the `comrade` directory. To deactivate, run `deactivate`.
 
 Config
 ------
@@ -51,10 +73,11 @@ Comrade needs your connection info in a config file. Create a file named `config
     {
       "mastodon_token": "Your Mastodon access token",
       "mastodon_instance": "Base URL of your Mastodon instance, if not mastodon.social",
+
       "api_key": "(deprecated) Your Twitter API key",
       "api_secret": "(deprecated) Your Twitter API secret",
       "access_token": "(deprecated) Your Twitter access token",
-      "access_secret": "(deprecated) Your Twitter access secret",
+      "access_secret": "(deprecated) Your Twitter access secret"
     }
 
 
@@ -96,7 +119,7 @@ Callbacks may be a string containing a command to execute.
 Several magic tokens are available to string callbacks. Include them in the command, and they will be swapped out for real values.
 
 - `{filename}`: The media attachment filename, if any.
-- `{config}`: The path to the comrade config file
+- `{config}`: The path to the Comrade config file
 - `{user}`: The third-party Mastodon user who triggered this callback
 - `{id}`: The ID of the toot which triggered this callback, or `None`
 - `{visibility}`: The type of toot visibility (`public`, `unlisted`, `private`, or `direct`)
