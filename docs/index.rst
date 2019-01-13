@@ -100,7 +100,7 @@ Several magic tokens are available to string callbacks. Include them in the comm
 - `{user}`: The third-party Mastodon user who triggered this callback
 - `{id}`: The ID of the toot which triggered this callback, or `None`
 - `{visibility}`: The type of toot visibility (`public`, `unlisted`, `private`, or `direct`)
-- `{sensitive}`: The string ` --sensitive`, or empty. Intended as a flag for `post-media` (see example)
+- `{sensitive}`: The string :code:` --sensitive`, or empty. Intended as a flag for `post-media` (see example)
 
 .. code-block:: bash
 
