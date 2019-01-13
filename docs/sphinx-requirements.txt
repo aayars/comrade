@@ -1,2 +1,3 @@
 sphinx-rtd-theme==0.4.2
 sphinxcontrib-programoutput==0.10
+SQLAlchemy==1.2.16
