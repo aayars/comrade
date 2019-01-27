@@ -31,9 +31,6 @@ def are_bots_okay(account):
     if account['followers_count'] <= 12:
         return False
 
-    if account['created_at'].timestamp() > time.time() - 60*60*24*3:
-        return False
-
     return True
 
 def media_url_from_status(status):
