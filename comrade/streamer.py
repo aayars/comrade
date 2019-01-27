@@ -28,10 +28,10 @@ def are_bots_okay(account):
     if '#nobot' in account['note']:
         return False
 
-    if account['followers_count'] <= 15:
+    if account['followers_count'] <= 12:
         return False
 
-    if account['created_at'].timestamp() > time.time() - 60*60*24*5:
+    if account['created_at'].timestamp() > time.time() - 60*60*24*3:
         return False
 
     return True
