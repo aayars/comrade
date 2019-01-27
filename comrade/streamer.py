@@ -20,13 +20,21 @@ SILENCE_THRESHOLD = 8
 
 
 def are_bots_okay(account):
-    """Return True unless this user's profile contains #nobot
+    """Return True unless this user's profile contains #nobot, or user looks like a sock puppet.
 
     :param dict account: A user dict from the Mastodon.py API
     """
 
-    return '#nobot' not in account.get('note', '')
+    if '#nobot' in account['note']:
+        return False
 
+    if account['followers_count'] <= 15:
+        return False
+
+    if account['created_at'].timestamp() > time.time() - 60*60*24*5:
+        return False
+
+    return True
 
 def media_url_from_status(status):
     """Check the given status (or its parent) for a media attachment, and return the url or None.
@@ -113,7 +121,7 @@ class AbstractStreamer():
         self.callback = callback
         self.config = config
         self.client = client
-        self.exclude_user = exclude_user  # Needed for handle_reply
+        self.exclude_user = exclude_user  # Needed for _handle_reply
 
         self.user_time = {}   # Map of username to last interaction time
         self.user_count = {}  # Map of username to interaction counter
@@ -137,7 +145,7 @@ class AbstractStreamer():
 
         return self.user_count[username] >= SQUELCH_THRESHOLD
 
-    def handle_reply(self, notif_type=None, status=None, orig_status=None, media_url=None, account=None):
+    def _handle_reply(self, notif_type=None, status=None, orig_status=None, media_url=None, account=None):
         if status:
             self.set_status(status.get('id'), status)
 
@@ -270,7 +278,7 @@ class Streamer(AbstractStreamer, StreamListener):
 
         media_url = media_url_from_status(status)
 
-        return self.handle_reply(notif_type=None, status=status, orig_status=status, media_url=media_url, account=account)
+        return self._handle_reply(notif_type=None, status=status, orig_status=status, media_url=media_url, account=account)
 
     def on_notification(self, notif):
         account = notif.get('account', {})
@@ -300,7 +308,7 @@ class Streamer(AbstractStreamer, StreamListener):
         elif notif_type == 'reblog':
             media_url = media_url_from_status(status)
 
-        return self.handle_reply(notif_type=notif_type, status=status, orig_status=orig_status, media_url=media_url, account=account)
+        return self._handle_reply(notif_type=notif_type, status=status, orig_status=orig_status, media_url=media_url, account=account)
 
     def on_abort(self, status_code, data):
         print(status_code)

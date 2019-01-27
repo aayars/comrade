@@ -47,7 +47,7 @@ class ArchiveSink(AbstractArchiveStreamer):
             for status in statuses:
                 media_url = media_url_from_status(status)
 
-                self.handle_reply(notif_type='update', status=status, orig_status=status, media_url=media_url, account=status.get('account'))
+                self._handle_reply(notif_type='update', status=status, orig_status=status, media_url=media_url, account=status.get('account'))
 
             statuses = self.client.fetch_next(statuses)
 
@@ -67,4 +67,4 @@ class ArchiveSource(AbstractArchiveStreamer):
         session = sessionmaker(get_engine(self.data_dir))()
 
         for toot in session.query(Toot):
-            self.handle_reply(notif_type='update', status=toot.__dict__, orig_status=toot.__dict__, media_url=toot.media_url, account=toot.account_name)
+            self._handle_reply(notif_type='update', status=toot.__dict__, orig_status=toot.__dict__, media_url=toot.media_url, account=toot.account_name)

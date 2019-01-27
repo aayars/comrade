@@ -49,7 +49,7 @@ class OfflineStreamer(AbstractStreamer):
                             except Exception:
                                 pass
 
-                        self.handle_reply(**comrade_status)
+                        self._handle_reply(**comrade_status)
 
                 except Exception as e:
                     print("Couldn't process {}: {}".format(filename, str(e)))
