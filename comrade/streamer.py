@@ -44,7 +44,7 @@ def media_url_from_status(status):
     return media[0].get('url') if media else None
 
 
-def download_media(media_url):
+def download_media(media_url, filename=None):
     """Saves the given media url, and returns the filename.
 
     :param str media_url:
@@ -59,7 +59,8 @@ def download_media(media_url):
     if extension.startswith('.jp'):
         extension = '.jpg'  # sigh
 
-    filename = '{0}{1}'.format(random.randint(1, 1000000), extension)
+    if filename is None:
+        filename = '{0}{1}'.format(random.randint(1, 1000000), extension)
 
     # https://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
     with open(filename, 'wb') as fh:
