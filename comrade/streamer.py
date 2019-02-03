@@ -33,6 +33,7 @@ def are_bots_okay(account):
 
     return True
 
+
 def media_url_from_status(status):
     """Check the given status (or its parent) for a media attachment, and return the url or None.
 
