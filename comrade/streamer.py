@@ -14,9 +14,9 @@ from .model import Toot
 
 import requests
 
-SQUELCH_THRESHOLD = 4
+SQUELCH_THRESHOLD = 6
 
-SILENCE_THRESHOLD = 8
+SILENCE_THRESHOLD = 12
 
 
 def are_bots_okay(account):
@@ -163,7 +163,7 @@ class AbstractStreamer():
             if isinstance(account, dict) and not self.are_replies_okay(status, account):
                 return
 
-            if self.should_squelch_user(username):
+            if notif_type != 'direct' and self.should_squelch_user(username):
                 count = self.user_count[username]
 
                 if count >= SILENCE_THRESHOLD:
