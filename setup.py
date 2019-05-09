@@ -21,6 +21,7 @@ setup(name='comrade',
 
       install_requires=[
         "click==6.7",
+        "cryptography==2.5",  # hate this fucking module
         "diskcache==3.1.1",
         "twython==3.6.0",
         "Mastodon.py==1.3.1",
