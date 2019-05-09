@@ -146,9 +146,20 @@ class AbstractStreamer():
 
     def _handle_reply(self, notif_type=None, status=None, orig_status=None, media_url=None, account=None):
         if status:
+            # make sure visibility is set
+            status['visibility'] = status.get('visibility', 'unlisted')
+
+            # don't spam the public timeline
+            if status['visibility'] == 'public':
+                status['visibility'] = 'unlisted'
+
             self.set_status(status.get('id'), status)
 
         if orig_status:
+            if status:
+                # in case it was changed above
+                orig_status['visibility'] = status['visibility']
+
             self.set_status(orig_status.get('id'), orig_status)
 
         if isinstance(account, str):
@@ -159,57 +170,61 @@ class AbstractStreamer():
 
         print('Received {} from {}'.format(notif_type or 'update', username))
 
-        try:
-            if isinstance(account, dict) and not self.are_replies_okay(status, account):
+        if isinstance(account, dict) and not self.are_replies_okay(status, account):
+            return
+
+        if notif_type != 'direct' and self.should_squelch_user(username):
+            count = self.user_count[username]
+
+            if count >= SILENCE_THRESHOLD:
                 return
 
-            if notif_type != 'direct' and self.should_squelch_user(username):
-                count = self.user_count[username]
+            if status:
+                status['visibility'] = 'direct'
 
-                if count >= SILENCE_THRESHOLD:
-                    return
-
-                if status:
-                    status['visibility'] = 'direct'
-
-                if orig_status:
-                    orig_status['visibility'] = 'direct'
+            if orig_status:
+                orig_status['visibility'] = 'direct'
 
             if callable(self.callback):
-                self.callback(
-                    account=account,
-                    client=self.client,
-                    media_url=media_url,
-                    notif_type=notif_type,
-                    orig_status=orig_status,
-                    status=status,
-                )
+                try:
+                    self.callback(
+                        account=account,
+                        client=self.client,
+                        media_url=media_url,
+                        notif_type=notif_type,
+                        orig_status=orig_status,
+                        status=status,
+                    )
+
+                except Exception as e:
+                    print(str(e))
+
+        else:
+            if media_url:
+                print("    ... Downloading media {}".format(media_url))
+
+                media_filename = download_media(media_url)
 
             else:
-                if media_url:
-                    print("    ... Downloading media {}".format(media_url))
+                media_filename = None
 
-                    media_filename = download_media(media_url)
+            command = self.callback.format(
+                filename=media_filename,
+                config=self.config,
+                user=username,
+                id=orig_status.get('id', '') if orig_status else '',
+                visibility=status.get('visibility', 'unlisted') if status else 'direct',
+                sensitive='--sensitive' if status and status.get('sensitive') else '',
+            )
 
-                else:
-                    media_filename = None
-
-                command = self.callback.format(
-                    filename=media_filename,
-                    config=self.config,
-                    user=username,
-                    id=orig_status.get('id', '') if orig_status else '',
-                    visibility=status.get('visibility', 'public') if status else 'direct',
-                    sensitive='--sensitive' if status and status.get('sensitive') else '',
-                )
-
+            try:
                 subprocess.call(command, shell=True)
 
-                if media_filename:
-                    os.remove(media_filename)
+            except Exception as e:
+                print(str(e))
 
-        except Exception as e:
-            print(str(e))
+            if media_filename:
+                os.remove(media_filename)
 
     def get_status(self, id):
         """Get a status entry from the cache, falling back to the client."""
