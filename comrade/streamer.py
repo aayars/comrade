@@ -179,25 +179,25 @@ class AbstractStreamer():
             if count >= SILENCE_THRESHOLD:
                 return
 
-            if status:
-                status['visibility'] = 'direct'
+        if status:
+            status['visibility'] = 'direct'
 
-            if orig_status:
-                orig_status['visibility'] = 'direct'
+        if orig_status:
+            orig_status['visibility'] = 'direct'
 
-            if callable(self.callback):
-                try:
-                    self.callback(
-                        account=account,
-                        client=self.client,
-                        media_url=media_url,
-                        notif_type=notif_type,
-                        orig_status=orig_status,
-                        status=status,
-                    )
+        if callable(self.callback):
+            try:
+                self.callback(
+                    account=account,
+                    client=self.client,
+                    media_url=media_url,
+                    notif_type=notif_type,
+                    orig_status=orig_status,
+                    status=status,
+                )
 
-                except Exception as e:
-                    print(str(e))
+            except Exception as e:
+                print(str(e))
 
         else:
             if media_url:
