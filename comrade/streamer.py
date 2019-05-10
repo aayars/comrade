@@ -179,11 +179,11 @@ class AbstractStreamer():
             if count >= SILENCE_THRESHOLD:
                 return
 
-        if status:
-            status['visibility'] = 'direct'
+            if status:
+                status['visibility'] = 'direct'
 
-        if orig_status:
-            orig_status['visibility'] = 'direct'
+            if orig_status:
+                orig_status['visibility'] = 'direct'
 
         if callable(self.callback):
             try:
