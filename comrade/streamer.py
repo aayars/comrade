@@ -28,7 +28,7 @@ def are_bots_okay(account):
     if '#nobot' in account['note']:
         return False
 
-    if account['followers_count'] <= 12:
+    if account['followers_count'] < 3:
         return False
 
     return True
