@@ -194,6 +194,7 @@ class AbstractStreamer():
                     notif_type=notif_type,
                     orig_status=orig_status,
                     status=status,
+                    cache=self.cache
                 )
 
             except Exception as e:
