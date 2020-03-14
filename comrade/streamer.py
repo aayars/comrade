@@ -144,7 +144,7 @@ class AbstractStreamer():
 
         return self.user_count[username] >= SQUELCH_THRESHOLD
 
-    def _handle_reply(self, notif_type=None, status=None, orig_status=None, media_url=None, account=None):
+    def _handle_reply(self, notif_type=None, status=None, orig_status=None, media_url=None, account=None, **kwargs):
         if status:
             # make sure visibility is set
             status['visibility'] = status.get('visibility', 'unlisted')
