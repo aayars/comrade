@@ -26,6 +26,7 @@ def main(config, data_dir, callback, exclude_user, timeline, limit, account_id):
             notif_type=None,
             orig_status=None,
             status=None,
+            cache=None,
             ):
         """Take a toot from an online source, and archive it."""
 

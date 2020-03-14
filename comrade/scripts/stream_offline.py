@@ -17,7 +17,7 @@ from comrade.offline import OfflineStreamer
 @click.option("--callback", type=str, help="If not given, act as a message sink")
 @click.option("--exclude-user", type=str)
 def main(config, data_dir, callback, exclude_user):
-    def online_callback(client=None, **kwargs):
+    def online_callback(client=None, cache=None, **kwargs):
         """Take a toot from an online source, and store it for offline processing."""
 
         print("    ... Saving offline message")
