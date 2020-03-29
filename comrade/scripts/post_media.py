@@ -31,9 +31,8 @@ def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visi
 
             client.update_status(status=status, media_ids=media_ids, in_reply_to_status_id=in_reply_to, possibly_sensitive=sensitive)
 
-        except Exception:
-            # ¯\_(ツ)_/¯
-            pass
+        except Exception as e:
+            print("Failed to post to Twitter: " + str(e))
 
     if config.get("mastodon_token"):
         try:
@@ -52,4 +51,4 @@ def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visi
             mastodon.status_post(status, in_reply_to_id=in_reply_to, media_ids=media_ids, sensitive=sensitive, visibility=visibility, spoiler_text=cw)
 
         except Exception:
-            pass
+            print("Failed to post to Fediverse: " + str(e))
