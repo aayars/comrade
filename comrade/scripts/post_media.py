@@ -19,17 +19,26 @@ def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visi
 
     if config.get("api_key"):
         try:
+            print("DEBUG: Posting to Twitter")
+
             client = Twython(config["api_key"], config["api_secret"], config["access_token"], config["access_secret"])
             client.verify_credentials()
 
+            print("DEBUG: Verified credentials")
+
             if image:
                 responses = [client.upload_media(media=open(i, 'rb')) for i in image.split(',')]
+
+                print("DEBUG: Got responses from upload_media: " + str(responses))
+
                 media_ids = [r['media_id'] for r in responses]
 
             else:
                 media_ids = None
 
-            client.update_status(status=status, media_ids=media_ids, in_reply_to_status_id=in_reply_to, possibly_sensitive=sensitive)
+            response = client.update_status(status=status, media_ids=media_ids, in_reply_to_status_id=in_reply_to, possibly_sensitive=sensitive)
+
+            print("DEBUG: Got response from update_status: " + str(response))
 
         except Exception as e:
             print("Failed to post to Twitter: " + str(e))
