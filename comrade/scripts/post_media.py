@@ -2,6 +2,7 @@
 import json
 import mimetypes
 
+from loguru import logger
 from mastodon import Mastodon
 from twython import Twython
 
@@ -14,22 +15,26 @@ from twython import Twython
 @click.option("--sensitive", is_flag=True, default=False)
 @click.option("--cw", type=str)
 @click.option("--visibility", type=click.Choice(["public", "unlisted", "private", "direct"]), default="public", help="Post visibility (Mastodon only)")
-def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visibility="public"):
+@click.option("--log-dir", type=click.Path(dir_okay=True), default=None)
+def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visibility="public", log_dir=None):
     config = json.load(open(config))
+
+    if log_dir:
+        logger.add(log_dir + "/comrade.log", retention="7 days")
 
     if config.get("api_key"):
         try:
-            print("DEBUG: Posting to Twitter")
+            logger.debug("Posting to Twitter")
 
             client = Twython(config["api_key"], config["api_secret"], config["access_token"], config["access_secret"])
             client.verify_credentials()
 
-            print("DEBUG: Verified credentials")
+            logger.debug("Verified credentials")
 
             if image:
                 responses = [client.upload_media(media=open(i, 'rb')) for i in image.split(',')]
 
-                print("DEBUG: Got responses from upload_media: " + str(responses))
+                logger.debug("Got responses from upload_media: " + str(responses))
 
                 media_ids = [r['media_id'] for r in responses]
 
@@ -38,10 +43,10 @@ def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visi
 
             response = client.update_status(status=status, media_ids=media_ids, in_reply_to_status_id=in_reply_to, possibly_sensitive=sensitive)
 
-            print("DEBUG: Got response from update_status: " + str(response))
+            logger.debug("Got response from update_status: " + str(response))
 
         except Exception as e:
-            print("Failed to post to Twitter: " + str(e))
+            logger.error("Failed to post to Twitter: " + str(e))
 
     if config.get("mastodon_token"):
         try:
@@ -60,4 +65,4 @@ def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visi
             mastodon.status_post(status, in_reply_to_id=in_reply_to, media_ids=media_ids, sensitive=sensitive, visibility=visibility, spoiler_text=cw)
 
         except Exception:
-            print("Failed to post to Fediverse: " + str(e))
+            logger.error("Failed to post to Fediverse: " + str(e))

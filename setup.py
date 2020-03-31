@@ -23,6 +23,7 @@ setup(name='comrade',
         "click==6.7",
         "cryptography==2.5",  # hate this fucking module
         "diskcache==3.1.1",
+        "loguru==0.4.1",
         "twython==3.6.0",
         "Mastodon.py==1.3.1",
         "SQLAlchemy==1.2.16",
