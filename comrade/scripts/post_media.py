@@ -36,7 +36,7 @@ def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visi
 
                 for i in image.split(','):
                     if i.endswith('.gif'):
-                        responses.append(client.upload_video(media=open(i, 'rb'), media_type='image/gif'))
+                        responses.append(client.upload_video(media=open(i, 'rb'), media_type='image/gif', media_category='tweet_gif'))
 
                     else:
                         responses.append(client.upload_media(media=open(i, 'rb')))
