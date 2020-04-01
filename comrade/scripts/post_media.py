@@ -32,7 +32,14 @@ def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visi
             logger.debug("Verified credentials")
 
             if image:
-                responses = [client.upload_media(media=open(i, 'rb')) for i in image.split(',')]
+                responses = []
+
+                for i in image.split(','):
+                    if i.endswith('.gif'):
+                        responses.append(client.upload_video(media=open(i, 'rb'), media_type='image/gif'))
+
+                    else:
+                        responses.append(client.upload_media(media=open(i, 'rb')))
 
                 logger.debug("Got responses from upload_media: " + str(responses))
 
