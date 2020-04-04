@@ -149,10 +149,6 @@ class AbstractStreamer():
             # make sure visibility is set
             status['visibility'] = status.get('visibility', 'unlisted')
 
-            # don't spam the public timeline
-            if status['visibility'] == 'public':
-                status['visibility'] = 'unlisted'
-
             self.set_status(status.get('id'), status)
 
         if orig_status:
