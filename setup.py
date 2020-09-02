@@ -24,7 +24,7 @@ setup(name='comrade',
         "cryptography==2.5",  # hate this fucking module
         "diskcache==3.1.1",
         "loguru==0.4.1",
-        "twython==3.6.0",
+        "twython==3.8.2",
         "Mastodon.py==1.5.1",
         "SQLAlchemy==1.2.16",
         ]
