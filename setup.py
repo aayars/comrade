@@ -22,7 +22,7 @@ setup(name='comrade',
       install_requires=[
         "click==7.1.2",
         "cryptography==3.1",  # hate this fucking module
-        "diskcache==5.0.2",
+        "diskcache==5.0.3",
         "loguru==0.5.2",
         "twython==3.8.2",
         "Mastodon.py==1.5.1",
