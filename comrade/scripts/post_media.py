@@ -48,7 +48,13 @@ def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visi
             else:
                 media_ids = None
 
-            response = client.update_status(status=status, media_ids=media_ids, in_reply_to_status_id=in_reply_to, possibly_sensitive=sensitive)
+            if cw:
+                cw_status = cw + "\n\n" + status
+
+            else:
+                cw_status = status
+
+            response = client.update_status(status=cw_status, media_ids=media_ids, in_reply_to_status_id=in_reply_to, possibly_sensitive=bool(cw or sensitive))
 
             logger.debug("Got response from update_status: " + str(response))
 
