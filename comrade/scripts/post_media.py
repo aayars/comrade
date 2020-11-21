@@ -38,6 +38,9 @@ def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visi
                     if i.endswith('.gif'):
                         responses.append(client.upload_video(media=open(i, 'rb'), media_type='image/gif', media_category='tweet_gif'))
 
+                    elif i.endswith('.mp4'):
+                        responses.append(client.upload_video(media=open(i, 'rb'), media_type='video/mp4', media_category='tweet_video', check_progress=True))
+
                     else:
                         responses.append(client.upload_media(media=open(i, 'rb')))
 
@@ -77,5 +80,5 @@ def main(config, image, status, in_reply_to=None, sensitive=False, cw=None, visi
 
             mastodon.status_post(status, in_reply_to_id=in_reply_to, media_ids=media_ids, sensitive=sensitive, visibility=visibility, spoiler_text=cw)
 
-        except Exception:
+        except Exception as e:
             logger.error("Failed to post to Fediverse: " + str(e))
