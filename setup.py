@@ -26,6 +26,6 @@ setup(name='comrade',
         "loguru==0.5.3",
         "twython==3.8.2",
         "Mastodon.py==1.5.1",
-        "SQLAlchemy==1.4.1",
+        "SQLAlchemy==1.4.10",
         ]
       )
