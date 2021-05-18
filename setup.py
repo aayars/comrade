@@ -20,7 +20,7 @@ setup(name='comrade',
         ''',
 
       install_requires=[
-        "click==7.1.2",
+        "click==8.0.0",
         "cryptography==3.4.7",  # hate this fucking module
         "diskcache==5.2.1",
         "loguru==0.5.3",
