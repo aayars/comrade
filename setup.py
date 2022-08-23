@@ -20,10 +20,10 @@ setup(name='comrade',
         ''',
 
       install_requires=[
-        "click==8.0.1",
+        "click==8.1.3",
         "cryptography==3.4.7",  # hate this fucking module
         "diskcache==5.4.0",
-        "loguru==0.5.3",
+        "loguru==0.6.0",
         "twython==3.9.1",
         "Mastodon.py==1.5.1",
         "SQLAlchemy==1.4.18",
