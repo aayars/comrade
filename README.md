@@ -1,7 +1,5 @@
 # Comrade
 
-## Comrade is good Mastodon bot. Салюд!
-
-Stream and post toots with a simple callback-driven interface.
+Post tweets and toots with media attachments.
 
 Read the docs at [readthedocs](http://comrade.readthedocs.io/)
