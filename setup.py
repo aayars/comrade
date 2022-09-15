@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='comrade',
-      version='0.3.0',
+      version='0.4.0',
       description='Comrade is good Mastodon bot. Салюд!',
       author='Alex Ayars',
       author_email='aayars@gmail.com',
