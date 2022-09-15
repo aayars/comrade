@@ -72,11 +72,3 @@ post-media
 ~~~~~~~~~~
 
 Post images to Twitter and/or Mastodon (depending on what's in your config file)
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
