@@ -21,11 +21,9 @@ setup(name='comrade',
 
       install_requires=[
         "click==8.1.3",
-        "cryptography==38.0.2",  # hate this fucking module
-        "diskcache==5.4.0",
+        "cryptography==38.0.2",  # pinned because setuptools is stunad
         "loguru==0.6.0",
         "twython==3.9.1",
         "Mastodon.py==1.5.1",
-        "SQLAlchemy==1.4.42",
         ]
       )
