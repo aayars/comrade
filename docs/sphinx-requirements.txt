@@ -1,4 +1,4 @@
 diskcache==5.4.0
-Mastodon.py==1.8.0
+Mastodon.py==1.8.1
 sphinx-rtd-theme==1.2.0
 sphinxcontrib-programoutput==0.17

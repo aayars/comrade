@@ -24,6 +24,6 @@ setup(name='comrade',
         "cryptography==39.0.0",  # pinned because setuptools is stunad
         "loguru==0.6.0",
         "twython==3.9.1",
-        "Mastodon.py==1.8.0",
+        "Mastodon.py==1.8.1",
         ]
       )
