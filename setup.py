@@ -20,7 +20,7 @@ setup(name='comrade',
         ''',
 
       install_requires=[
-        "click==8.1.3",
+        "click==8.1.4",
         "cryptography==41.0.1",  # pinned because setuptools is stunad
         "loguru==0.7.0",
         "twython==3.9.1",
