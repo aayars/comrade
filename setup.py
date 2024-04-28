@@ -18,7 +18,7 @@ setup(name='comrade',
 
       install_requires=[
         "click==8.1.7",
-        "cryptography==41.0.1",  # pinned because setuptools is stunad
+        "cryptography==42.0.5",  # pinned because setuptools is stunad
         "loguru==0.7.0",
         "Mastodon.py==1.8.1",
         ]
