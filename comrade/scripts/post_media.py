@@ -6,7 +6,6 @@ import click
 from loguru import logger
 from mastodon import Mastodon
 
-
 @click.command()
 @click.option("--config", type=click.Path(dir_okay=False), required=True)
 @click.option("--image", type=click.Path(dir_okay=False), required=False)
@@ -15,7 +14,12 @@ from mastodon import Mastodon
 @click.option("--in-reply-to", type=str)
 @click.option("--sensitive", is_flag=True, default=False)
 @click.option("--cw", type=str)
-@click.option("--visibility", type=click.Choice(["public", "unlisted", "private", "direct"]), default="public", help="Post visibility (Mastodon only)")
+@click.option(
+    "--visibility",
+    type=click.Choice(['public', 'unlisted', 'private', 'direct']),
+    default="public",
+    help="Post visibility (Mastodon only)"
+)
 @click.option("--log-dir", type=click.Path(dir_okay=True), default=None)
 def main(
     config,
@@ -45,20 +49,10 @@ def main(
                 response = mastodon.media_post(
                     open(path, "rb"),
                     mime_type,
-                    description=description
+                    description=description,
+                    synchronous=True
                 )
-                media_id = response["id"]
-
-                while True:
-                    media = mastodon.media(media_id)
-                    processing = media.get("meta", {}).get("processing")
-                    if not processing or processing.get("state") == "succeeded":
-                        break
-                    if processing.get("state") == "failed":
-                        raise RuntimeError(f"Media processing failed for {path}")
-                    time.sleep(1)
-
-                return media_id
+                return response["id"]
 
             if image:
                 media_ids = [upload_media(item, alt) for item in image.split(",")]
