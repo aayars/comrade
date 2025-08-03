@@ -1,4 +1,3 @@
-﻿import time
 import json
 import mimetypes
 
@@ -32,7 +31,9 @@ def main(
     visibility="public",
     log_dir=None
 ):
-    cfg = json.load(open(config))
+    """Post a status with optional media to supported platforms."""
+    with open(config) as cfg_file:
+        cfg = json.load(cfg_file)
 
     if log_dir:
         logger.add(f"{log_dir}/comrade.log", retention="7 days")
@@ -46,12 +47,13 @@ def main(
 
             def upload_media(path, description):
                 mime_type = mimetypes.guess_type(path)[0]
-                response = mastodon.media_post(
-                    open(path, "rb"),
-                    mime_type,
-                    description=description,
-                    synchronous=True
-                )
+                with open(path, "rb") as media_file:
+                    response = mastodon.media_post(
+                        media_file,
+                        mime_type,
+                        description=description,
+                        synchronous=True,
+                    )
                 return response["id"]
 
             if image:
