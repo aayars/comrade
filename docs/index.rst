@@ -71,4 +71,5 @@ Run a script with :code:`--help` for more info.
 post-media
 ~~~~~~~~~~
 
-Post images to Twitter and/or Mastodon (depending on what's in your config file)
+Post images to Twitter and/or Mastodon (depending on what's in your config file).
+Use ``--image`` multiple times to attach several images to a single post.

@@ -8,7 +8,13 @@ from mastodon import Mastodon
 
 @click.command()
 @click.option("--config", type=click.Path(dir_okay=False), required=True)
-@click.option("--image", type=click.Path(dir_okay=False), required=False)
+@click.option(
+    "--image",
+    type=click.Path(dir_okay=False),
+    multiple=True,
+    required=False,
+    help="Path to an image file. Use multiple --image options to attach multiple images.",
+)
 @click.option("--alt", type=str, required=False)
 @click.option("--status", type=str, required=True)
 @click.option("--in-reply-to", type=str)
@@ -23,14 +29,14 @@ from mastodon import Mastodon
 @click.option("--log-dir", type=click.Path(dir_okay=True), default=None)
 def main(
     config,
-    image,
+    image: tuple[str, ...],
     alt,
     status,
     in_reply_to=None,
     sensitive=False,
     cw=None,
     visibility="public",
-    log_dir=None
+    log_dir=None,
 ):
     cfg = json.load(open(config))
 
@@ -55,7 +61,7 @@ def main(
                 return response["id"]
 
             if image:
-                media_ids = [upload_media(item, alt) for item in image.split(",")]
+                media_ids = [upload_media(path, alt) for path in image]
             else:
                 media_ids = None
 
