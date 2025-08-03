@@ -2,6 +2,7 @@ import json
 import mimetypes
 
 import click
+from pathlib import Path
 from loguru import logger
 from mastodon import Mastodon
 
@@ -36,6 +37,7 @@ def main(
         cfg = json.load(cfg_file)
 
     if log_dir:
+        Path(log_dir).mkdir(parents=True, exist_ok=True)
         logger.add(f"{log_dir}/comrade.log", retention="7 days")
 
     if cfg.get("mastodon_token"):

@@ -159,3 +159,37 @@ def test_image_paths_are_stripped(tmp_path, monkeypatch):
         ],
     )
     assert result.exit_code == 0, result.output
+
+
+def test_creates_log_directory(tmp_path, monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1]))
+    monkeypatch.setitem(sys.modules, "loguru", types.SimpleNamespace(logger=_DummyLogger()))
+    monkeypatch.setitem(sys.modules, "mastodon", types.SimpleNamespace(Mastodon=object))
+
+    from comrade.scripts import post_media
+    from comrade.scripts.post_media import main
+
+    config_file = tmp_path / "config.json"
+    config_file.write_text(
+        json.dumps({"mastodon_token": "t", "mastodon_instance": "https://example.com"})
+    )
+    image_file = tmp_path / "image.txt"
+    image_file.write_text("data")
+    log_dir = tmp_path / "logs"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "--config",
+            str(config_file),
+            "--image",
+            str(image_file),
+            "--status",
+            "hi",
+            "--log-dir",
+            str(log_dir),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert log_dir.exists()
