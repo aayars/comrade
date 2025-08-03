@@ -53,12 +53,7 @@ Comrade needs your connection info in a config file. Create a file named `config
 
     {
       "mastodon_token": "Your Mastodon access token",
-      "mastodon_instance": "Base URL of your Mastodon instance, if not mastodon.social",
-
-      "api_key": "(deprecated) Your Twitter API key",
-      "api_secret": "(deprecated) Your Twitter API secret",
-      "access_token": "(deprecated) Your Twitter access token",
-      "access_secret": "(deprecated) Your Twitter access secret"
+      "mastodon_instance": "Base URL of your Mastodon instance, if not mastodon.social"
     }
 
 
@@ -71,5 +66,5 @@ Run a script with :code:`--help` for more info.
 post-media
 ~~~~~~~~~~
 
-Post images to Twitter and/or Mastodon (depending on what's in your config file).
+Post images to Mastodon using your configured access token.
 Use ``--image`` multiple times to attach several images to a single post.
