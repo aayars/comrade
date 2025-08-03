@@ -6,11 +6,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-# Ensure the package root is importable when running tests directly.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-# Provide stub modules so `post_media` can be imported without optional
-# dependencies.
 class _DummyLogger:
     def add(self, *args, **kwargs):
         pass
@@ -18,14 +14,16 @@ class _DummyLogger:
     def error(self, *args, **kwargs):
         pass
 
-sys.modules.setdefault("loguru", types.SimpleNamespace(logger=_DummyLogger()))
-sys.modules.setdefault("mastodon", types.SimpleNamespace(Mastodon=object))
-
-from comrade.scripts import post_media
-from comrade.scripts.post_media import main
-
 
 def test_files_closed_after_run(tmp_path, monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1]))
+    # Stub optional dependencies before importing the module under test.
+    monkeypatch.setitem(sys.modules, "loguru", types.SimpleNamespace(logger=_DummyLogger()))
+    monkeypatch.setitem(sys.modules, "mastodon", types.SimpleNamespace(Mastodon=object))
+
+    from comrade.scripts import post_media
+    from comrade.scripts.post_media import main
+
     config_file = tmp_path / "config.json"
     config_file.write_text(
         json.dumps({"mastodon_token": "t", "mastodon_instance": "https://example.com"})
