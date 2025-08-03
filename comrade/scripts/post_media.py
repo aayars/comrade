@@ -57,7 +57,8 @@ def main(
                 return response["id"]
 
             if image:
-                media_ids = [upload_media(item, alt) for item in image.split(",")]
+                paths = [p.strip() for p in image.split(",") if p.strip()]
+                media_ids = [upload_media(item, alt) for item in paths]
             else:
                 media_ids = None
 

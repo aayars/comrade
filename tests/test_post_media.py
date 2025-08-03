@@ -116,3 +116,46 @@ def test_default_mime_type(tmp_path, monkeypatch):
     )
     assert result.exit_code == 0, result.output
     assert captured["mime_type"] == "application/octet-stream"
+
+
+def test_image_paths_are_stripped(tmp_path, monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1]))
+    monkeypatch.setitem(sys.modules, "loguru", types.SimpleNamespace(logger=_DummyLogger()))
+    monkeypatch.setitem(sys.modules, "mastodon", types.SimpleNamespace(Mastodon=object))
+
+    from comrade.scripts import post_media
+    from comrade.scripts.post_media import main
+
+    config_file = tmp_path / "config.json"
+    config_file.write_text(
+        json.dumps({"mastodon_token": "t", "mastodon_instance": "https://example.com"})
+    )
+
+    image_file = tmp_path / "image.txt"
+    image_file.write_text("data")
+
+    class DummyMastodon:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def media_post(self, fileobj, mime_type, description=None, synchronous=False):
+            return {"id": "1"}
+
+        def status_post(self, *args, **kwargs):
+            return {}
+
+    monkeypatch.setattr(post_media, "Mastodon", DummyMastodon)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "--config",
+            str(config_file),
+            "--image",
+            f"{image_file}, {image_file}",
+            "--status",
+            "hi",
+        ],
+    )
+    assert result.exit_code == 0, result.output
