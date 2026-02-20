@@ -55,7 +55,8 @@ def main(
     visibility="public",
     log_dir=None,
 ):
-    cfg = json.load(open(config))
+    with open(config) as f:
+        cfg = json.load(f)
 
     if log_dir:
         logger.add(f"{log_dir}/comrade.log", retention="7 days")
@@ -71,12 +72,13 @@ def main(
         session = requests.Session()
         session.headers["Authorization"] = f"Bearer {token}"
 
-        media_ids = None
+        media_ids = []
         if image:
-            media_ids = [
-                _upload_media(session, base_url, path, alt)
-                for path in image.split(",")
-            ]
+            alts = alt.split(",") if alt else []
+            paths = image.split(",")
+            for i, path in enumerate(paths):
+                description = alts[i] if i < len(alts) else None
+                media_ids.append(_upload_media(session, base_url, path, description))
 
         payload = {
             "status": status,
@@ -94,7 +96,8 @@ def main(
         response.raise_for_status()
 
     except Exception as e:
-        logger.error("Failed to post: " + str(e))
+        logger.error("Failed to post: {}", e)
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

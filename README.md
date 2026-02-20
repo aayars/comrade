@@ -5,7 +5,7 @@ Post to Mastodon with media attachments.
 ## Install
 
 ```bash
-pip install git+https://github.com/aayars/comrade
+pip install git+https://github.com/aayars/comrade@main
 ```
 
 ## Config
