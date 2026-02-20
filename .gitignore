@@ -1,6 +1,6 @@
 __pycache__/
-docs-venv/
+*.egg-info/
+dist/
 venv/
-*.png
+.DS_Store
 *.pyc
-noisemaker.egg-info

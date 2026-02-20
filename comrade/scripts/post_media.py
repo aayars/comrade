@@ -1,10 +1,34 @@
-﻿import time
 import json
 import mimetypes
+import time
 
 import click
+import requests
 from loguru import logger
-from mastodon import Mastodon
+
+
+def _upload_media(session, base_url, path, description):
+    mime_type = mimetypes.guess_type(path)[0]
+
+    with open(path, "rb") as f:
+        files = {"file": (path, f, mime_type)}
+        data = {"description": description} if description else {}
+        response = session.post(f"{base_url}/api/v2/media", files=files, data=data)
+        response.raise_for_status()
+        result = response.json()
+
+    # v2/media returns 202 while still processing
+    if response.status_code == 202:
+        media_id = result["id"]
+        for _ in range(60):
+            time.sleep(1)
+            r = session.get(f"{base_url}/api/v1/media/{media_id}")
+            if r.status_code == 200:
+                return r.json()["id"]
+        raise TimeoutError(f"Media {media_id} not processed after 60s")
+
+    return result["id"]
+
 
 @click.command()
 @click.option("--config", type=click.Path(dir_okay=False), required=True)
@@ -16,9 +40,8 @@ from mastodon import Mastodon
 @click.option("--cw", type=str)
 @click.option(
     "--visibility",
-    type=click.Choice(['public', 'unlisted', 'private', 'direct']),
+    type=click.Choice(["public", "unlisted", "private", "direct"]),
     default="public",
-    help="Post visibility (Mastodon only)"
 )
 @click.option("--log-dir", type=click.Path(dir_okay=True), default=None)
 def main(
@@ -30,48 +53,49 @@ def main(
     sensitive=False,
     cw=None,
     visibility="public",
-    log_dir=None
+    log_dir=None,
 ):
     cfg = json.load(open(config))
 
     if log_dir:
         logger.add(f"{log_dir}/comrade.log", retention="7 days")
 
-    if cfg.get("mastodon_token"):
-        try:
-            mastodon = Mastodon(
-                access_token=cfg["mastodon_token"],
-                api_base_url=cfg["mastodon_instance"]
-            )
+    token = cfg.get("mastodon_token")
+    base_url = cfg.get("mastodon_instance", "https://mastodon.social")
 
-            def upload_media(path, description):
-                mime_type = mimetypes.guess_type(path)[0]
-                response = mastodon.media_post(
-                    open(path, "rb"),
-                    mime_type,
-                    description=description,
-                    synchronous=True
-                )
-                return response["id"]
+    if not token:
+        logger.error("mastodon_token not found in config")
+        return
 
-            if image:
-                media_ids = [upload_media(item, alt) for item in image.split(",")]
-            else:
-                media_ids = None
+    try:
+        session = requests.Session()
+        session.headers["Authorization"] = f"Bearer {token}"
 
-            mastodon.status_post(
-                status,
-                in_reply_to_id=in_reply_to,
-                media_ids=media_ids,
-                sensitive=sensitive,
-                visibility=visibility,
-                spoiler_text=cw
-            )
+        media_ids = None
+        if image:
+            media_ids = [
+                _upload_media(session, base_url, path, alt)
+                for path in image.split(",")
+            ]
 
-        except Exception as e:
-            logger.error("Failed to post to Fediverse: " + str(e))
+        payload = {
+            "status": status,
+            "visibility": visibility,
+            "sensitive": sensitive,
+        }
+        if media_ids:
+            payload["media_ids"] = media_ids
+        if in_reply_to:
+            payload["in_reply_to_id"] = in_reply_to
+        if cw:
+            payload["spoiler_text"] = cw
+
+        response = session.post(f"{base_url}/api/v1/statuses", json=payload)
+        response.raise_for_status()
+
+    except Exception as e:
+        logger.error("Failed to post: " + str(e))
 
 
 if __name__ == "__main__":
     main()
-
