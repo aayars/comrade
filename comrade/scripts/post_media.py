@@ -1,10 +1,19 @@
 import json
 import mimetypes
 import time
+from datetime import datetime, timezone
 
 import click
 import requests
 from loguru import logger
+
+
+def _parse_images(image, alt):
+    if not image:
+        return []
+    paths = image.split(",")
+    alts = alt.split(",") if alt else []
+    return [(paths[i], alts[i] if i < len(alts) else "") for i in range(len(paths))]
 
 
 def _upload_media(session, base_url, path, description):
@@ -30,6 +39,29 @@ def _upload_media(session, base_url, path, description):
     return result["id"]
 
 
+def _bluesky_upload_blob(session, base_url, path):
+    mime_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+    with open(path, "rb") as f:
+        response = session.post(
+            f"{base_url}/xrpc/com.atproto.repo.uploadBlob",
+            headers={"Content-Type": mime_type},
+            data=f,
+        )
+        response.raise_for_status()
+        return response.json()["blob"]
+
+
+def _bluesky_login(session, base_url, handle, password):
+    response = session.post(
+        f"{base_url}/xrpc/com.atproto.server.createSession",
+        json={"identifier": handle, "password": password},
+    )
+    response.raise_for_status()
+    data = response.json()
+    session.headers["Authorization"] = f"Bearer {data['accessJwt']}"
+    return data["did"]
+
+
 @click.command()
 @click.option("--config", type=click.Path(dir_okay=False), required=True)
 @click.option("--image", type=click.Path(dir_okay=False), required=False)
@@ -44,6 +76,11 @@ def _upload_media(session, base_url, path, description):
     default="public",
 )
 @click.option("--log-dir", type=click.Path(dir_okay=True), default=None)
+@click.option(
+    "--target",
+    type=click.Choice(["mastodon", "bluesky"]),
+    default="mastodon",
+)
 def main(
     config,
     image,
@@ -54,6 +91,7 @@ def main(
     cw=None,
     visibility="public",
     log_dir=None,
+    target="mastodon",
 ):
     with open(config) as f:
         cfg = json.load(f)
@@ -61,43 +99,108 @@ def main(
     if log_dir:
         logger.add(f"{log_dir}/comrade.log", retention="7 days")
 
-    token = cfg.get("mastodon_token")
-    base_url = cfg.get("mastodon_instance", "https://mastodon.social")
+    if target == "mastodon":
+        token = cfg.get("mastodon_token")
+        base_url = cfg.get("mastodon_instance", "https://mastodon.social")
 
-    if not token:
-        logger.error("mastodon_token not found in config")
-        return
+        if not token:
+            logger.error("mastodon_token not found in config")
+            return
 
-    try:
-        session = requests.Session()
-        session.headers["Authorization"] = f"Bearer {token}"
+        try:
+            session = requests.Session()
+            session.headers["Authorization"] = f"Bearer {token}"
 
-        media_ids = []
-        if image:
-            alts = alt.split(",") if alt else []
-            paths = image.split(",")
-            for i, path in enumerate(paths):
-                description = alts[i] if i < len(alts) else None
+            media_ids = []
+            for path, description in _parse_images(image, alt):
                 media_ids.append(_upload_media(session, base_url, path, description))
 
-        payload = {
-            "status": status,
-            "visibility": visibility,
-            "sensitive": sensitive,
-        }
-        if media_ids:
-            payload["media_ids"] = media_ids
-        if in_reply_to:
-            payload["in_reply_to_id"] = in_reply_to
+            payload = {
+                "status": status,
+                "visibility": visibility,
+                "sensitive": sensitive,
+            }
+            if media_ids:
+                payload["media_ids"] = media_ids
+            if in_reply_to:
+                payload["in_reply_to_id"] = in_reply_to
+            if cw:
+                payload["spoiler_text"] = cw
+
+            response = session.post(f"{base_url}/api/v1/statuses", json=payload)
+            response.raise_for_status()
+
+        except Exception as e:
+            logger.error("Failed to post: {}", e)
+            raise SystemExit(1)
+
+    elif target == "bluesky":
+        handle = cfg.get("bluesky_handle")
+        password = cfg.get("bluesky_password")
+        base_url = cfg.get("bluesky_instance", "https://bsky.social")
+
+        if not handle or not password:
+            logger.error("bluesky_handle and bluesky_password required in config")
+            return
+
+        ignored = []
+        if visibility != "public":
+            ignored.append(f"--visibility {visibility}")
+        if sensitive:
+            ignored.append("--sensitive")
         if cw:
-            payload["spoiler_text"] = cw
+            ignored.append("--cw")
+        if in_reply_to:
+            ignored.append("--in-reply-to")
+        if ignored:
+            logger.warning("Bluesky does not support {}; ignored", ", ".join(ignored))
 
-        response = session.post(f"{base_url}/api/v1/statuses", json=payload)
-        response.raise_for_status()
+        parsed_images = _parse_images(image, alt)
 
-    except Exception as e:
-        logger.error("Failed to post: {}", e)
-        raise SystemExit(1)
+        if len(status) > 300:
+            logger.error("Bluesky posts cannot exceed 300 characters ({} given)", len(status))
+            raise SystemExit(1)
+
+        if len(parsed_images) > 4:
+            logger.error("Bluesky posts cannot have more than 4 images ({} given)", len(parsed_images))
+            raise SystemExit(1)
+
+        try:
+            session = requests.Session()
+            did = _bluesky_login(session, base_url, handle, password)
+
+            record = {
+                "$type": "app.bsky.feed.post",
+                "text": status,
+                "createdAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            }
+
+            images = []
+            for path, description in parsed_images:
+                blob = _bluesky_upload_blob(session, base_url, path)
+                images.append({"alt": description, "image": blob})
+
+            if images:
+                record["embed"] = {
+                    "$type": "app.bsky.embed.images",
+                    "images": images,
+                }
+
+            response = session.post(
+                f"{base_url}/xrpc/com.atproto.repo.createRecord",
+                json={
+                    "repo": did,
+                    "collection": "app.bsky.feed.post",
+                    "record": record,
+                },
+            )
+            response.raise_for_status()
+            result = response.json()
+            logger.info("Posted to Bluesky: {}", result["uri"])
+
+        except Exception as e:
+            logger.error("Failed to post: {}", e)
+            raise SystemExit(1)
 
 
 if __name__ == "__main__":
