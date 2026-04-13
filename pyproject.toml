@@ -12,7 +12,7 @@ authors = [{ name = "Alex Ayars", email = "aayars@gmail.com" }]
 
 dependencies = [
     "click>=8.1",
-    "loguru>=0.7",
+    "loguru>=0.7.3",
     "requests>=2.31",
 ]
 
