@@ -13,7 +13,7 @@ authors = [{ name = "Alex Ayars", email = "aayars@gmail.com" }]
 dependencies = [
     "click>=8.1",
     "loguru>=0.7",
-    "requests>=2.31",
+    "requests>=2.34.1",
 ]
 
 [project.optional-dependencies]
